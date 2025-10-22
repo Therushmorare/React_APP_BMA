@@ -64,15 +64,25 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   }, [application]);
 
   // Fetch application questions and answers
-    useEffect(() => {
-    if (!application?.id || !jobId) return;
+  useEffect(() => {
+    if (!application?.id && !application?.job_id) {
+      console.log("Missing application data:", application);
+      return;
+    }
 
     const loadQuestions = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const data = await fetchQuestions(application.job_id, application.id);
+        // The correct fields from your data
+        const jobId = application.job_id;
+        const applicantId = application.id || application.applicant_id;
+
+        console.log("Fetching questions for:", { jobId, applicantId });
+
+        const data = await fetchQuestions(jobId, applicantId);
+        console.log("Fetched application questions:", data);
         setApplicationQuestions(data);
       } catch (err) {
         console.error("Error fetching questions:", err);
@@ -83,7 +93,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     };
 
     loadQuestions();
-  }, [jobId, application]);
+  }, [application]);
 
   useEffect(() => {
     if (application) {
