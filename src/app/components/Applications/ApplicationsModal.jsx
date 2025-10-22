@@ -11,6 +11,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [personalInfo, setPersonalInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [applicationQuestions, setApplicationQuestions] = useState([])
   const [activeTab, setActiveTab] = useState("application");
   const [notes, setNotes] = useState("");
   const [rating, setRating] = useState(0);
@@ -26,22 +27,6 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     { value: "interview", label: "Schedule Interview" },
     { value: "shortlist", label: "Shortlist Candidate" },
     { value: "onboarding", label: "Onboarding Welcome" },
-  ];
-
-  const applicationQuestions = [
-    {
-      question: "Why are you interested in this position?",
-      answer: application?.coverLetter || "See cover letter below.",
-    },
-    {
-      question: "What are your salary expectations?",
-      answer: application?.salary || "Not specified",
-    },
-    {
-      question: "Years of experience?",
-      answer: `${application?.experienceYears || 0} years`,
-    },
-    { question: "When can you start?", answer: "2 weeks notice period" },
   ];
 
   const formatDate = (date) => {
@@ -76,6 +61,28 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
     loadPersonalInfo();
   }, [application]);
+
+  // Fetch application questions and answers
+    useEffect(() => {
+    if (!application?.id || !jobId) return;
+
+    const loadQuestions = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await fetchQuestions(application.job_id, application.id);
+        setApplicationQuestions(data);
+      } catch (err) {
+        console.error("Error fetching questions:", err);
+        setError("Failed to load questions");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadQuestions();
+  }, [jobId, application]);
 
   useEffect(() => {
     if (application) {
@@ -262,12 +269,20 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               <div>
                 {activeTab === "application" && (
                   <div className="space-y-3 text-sm">
-                    {applicationQuestions.map((q, idx) => (
-                      <div key={idx} className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-gray-600 font-medium">{q.question}</p>
-                        <p className="text-gray-900">{q.answer}</p>
-                      </div>
-                    ))}
+                    {applicationQuestions.length > 0 ? (
+                      applicationQuestions.map((q, idx) => (
+                        <div key={idx} className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-gray-600 font-medium">{q.question}</p>
+                          <p className="text-gray-900">{q.response}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        {loading
+                          ? "Loading questions..."
+                          : "No questions found for this applicant."}
+                      </p>
+                    )}
                   </div>
                 )}
 
