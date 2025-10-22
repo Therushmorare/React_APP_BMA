@@ -23,6 +23,9 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [interviewTime, setInterviewTime] = useState("");
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [interviewType, setInterviewType] = useState("");
+  const [scoreData, setScoreData] = useState(null);
+  const [loadingScore, setLoadingScore] = useState(false);
+  const [errorScore, setErrorScore] = useState("");
 
   const emailTemplates = [
     { value: "reject", label: "Reject Application" },
@@ -92,6 +95,40 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
     loadQuestions();
   }, [application?.id, application?.job_id]);
+
+  // Fetch Score Data
+  useEffect(() => {
+    const fetchScore = async () => {
+      if (!application?.job_id || !application?.id) {
+        console.warn("Missing job_id or applicant_id for score fetch");
+        return;
+      }
+
+      setLoadingScore(true);
+      setErrorScore("");
+
+      try {
+        const res = await fetch(
+          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/applicationScore/${application.job_id}/${application.id}`
+        );
+
+        if (!res.ok) throw new Error(`Failed to fetch score (${res.status})`);
+
+        const data = await res.json();
+        console.log("Fetched score data:", data);
+        setScoreData(data);
+      } catch (err) {
+        console.error("Error fetching application score:", err);
+        setErrorScore("Failed to load score data");
+      } finally {
+        setLoadingScore(false);
+      }
+    };
+
+    if (activeTab === "score") {
+      fetchScore();
+    }
+  }, [activeTab, application]);
 
   useEffect(() => {
     if (application) {
@@ -259,7 +296,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
             {/* Tabs */}
             <div>
               <div className="flex space-x-4 border-b border-gray-200 mb-4">
-                {["application", "evaluation", "email", "documents"].map((tab) => (
+                {["application", "score", "evaluation", "email", "documents"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -278,6 +315,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               <div>
                 {activeTab === "application" && (
                   <div className="space-y-3 text-sm">
+                    <h2 className="text-xl font-bold mb-4">Application Questions</h2>
                     {loadingQuestions ? (
                       <p>Loading questions...</p>
                     ) : applicationQuestions.length === 0 ? (
@@ -291,6 +329,42 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                           <p className="text-gray-900">{q.response}</p>
                         </div>
                       ))
+                    )}
+                  </div>
+
+                )}
+                
+                {activeTab === "score" && (
+                  <div className="space-y-6">
+                    {loadingScore ? (
+                      <div className="flex justify-center items-center py-6">
+                        <Loader className="animate-spin text-green-600" size={24} />
+                        <span className="ml-2 text-gray-600">Loading score...</span>
+                      </div>
+                    ) : errorScore ? (
+                      <div className="text-center text-red-500">{errorScore}</div>
+                    ) : scoreData ? (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-gray-800">Application Score</h3>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <ScoreCard label="Experience Score" value={scoreData.experience_score} />
+                          <ScoreCard label="Location Score" value={scoreData.location_score} />
+                          <ScoreCard label="Qualification Score" value={scoreData.qualification_score} />
+                          <ScoreCard label="Salary Score" value={scoreData.salary_score} />
+                        </div>
+
+                        <div className="mt-6 p-4 bg-green-50 rounded-lg text-center">
+                          <p className="text-gray-700 font-medium">
+                            Candidate Total Score:
+                            <span className="text-green-700 font-bold ml-2">
+                              {scoreData.candidate_application_score}/10
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-gray-500 text-center py-6">No score data available.</div>
                     )}
                   </div>
                 )}
