@@ -28,6 +28,7 @@ export async function fetchAllApplicants() {
 }
 
 export async function fetchPersonalInfo(applicantId) {
+  console.log("Attempting to fetch personal info for:", applicantId); // 🔥
   const res = await fetch(
     `https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/personalInfo/${applicantId}`,
     {
@@ -41,5 +42,7 @@ export async function fetchPersonalInfo(applicantId) {
     throw new Error(`Failed to fetch personal info for ${applicantId}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  console.log("Received data:", data); // 🔥
+  return data;
 }
