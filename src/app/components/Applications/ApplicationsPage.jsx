@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import ApplicationsTable from "../components/ApplicationsTable";
+import ApplicationsTable from "../components/Applications/ApplicationsTable";
 import { fetchAllApplicants } from "../services/api";
 
 export default function ApplicationsPage() {
