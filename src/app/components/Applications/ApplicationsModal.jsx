@@ -50,15 +50,19 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   // Fetch personal info
   useEffect(() => {
-    if (!application?.applicant_id) return;
+    if (!application?.applicant_id) {
+      console.log("No applicant_id found yet:", application);
+      return;
+    }
 
     const loadPersonalInfo = async () => {
       setLoading(true);
       setError(null);
+      console.log("Fetching personal info for:", application.applicant_id);
 
       try {
-        user_data = "11940e57-78f0-4a9f-beaf-f6c20e449303";
-        const data = await fetchPersonalInfo(user_data);
+        const data = await fetchPersonalInfo(application.applicant_id);
+        console.log("Fetched data:", data);
         setPersonalInfo(data);
       } catch (err) {
         console.error("Error fetching personal info:", err);
@@ -189,8 +193,13 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {personalInfo ? (
+              <div className="p-6">
+                <h2 className="text-xl font-bold mb-4">Personal Info</h2>
+
+                {loading && <p className="text-gray-500">Loading personal info...</p>}
+                {error && <p className="text-red-500">{error}</p>}
+
+                {personalInfo && (
                   <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-gray-600">Name:</span>
@@ -200,9 +209,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                     </div>
                     <div>
                       <span className="text-gray-600">Phone:</span>
-                      <p className="text-gray-900 font-medium">
-                        {personalInfo.phone_number}
-                      </p>
+                      <p className="text-gray-900 font-medium">{personalInfo.phone_number}</p>
                     </div>
                     <div>
                       <span className="text-gray-600">City:</span>
@@ -218,9 +225,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                     </div>
                     <div>
                       <span className="text-gray-600">Date of Birth:</span>
-                      <p className="text-gray-900 font-medium">
-                        {formatDate(personalInfo.date_of_birth)}
-                      </p>
+                      <p className="text-gray-900 font-medium">{formatDate(personalInfo.date_of_birth)}</p>
                     </div>
                     <div className="col-span-2">
                       <span className="text-gray-600">Address:</span>
@@ -229,8 +234,6 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                       </p>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-gray-500 text-sm">Loading personal info...</div>
                 )}
               </div>
             </div>
