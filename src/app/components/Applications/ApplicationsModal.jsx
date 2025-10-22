@@ -50,7 +50,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
       }
     }
     loadPersonalInfo();
-  }, [application && application.applicant_id]);
+  }, [application?.applicant_id]); // <- use optional chaining here
 
   useEffect(() => {
     if (application) {
