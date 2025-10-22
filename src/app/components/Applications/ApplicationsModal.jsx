@@ -165,7 +165,9 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 <div>
                   <span className="text-gray-600">Applied:</span>
                   <p className="text-gray-900 font-medium">
-                    {new Date(application.appliedDate).toLocaleDateString('en-GB')}
+                    {application.appliedDate
+                      ? new Date(application.appliedDate).toLocaleDateString('en-GB')
+                      : "—"}
                   </p>
                 </div>
               </div>
