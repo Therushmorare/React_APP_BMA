@@ -50,19 +50,26 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   // Fetch personal info
   useEffect(() => {
-    setPersonalInfo(null); // Reset while loading
-    async function loadPersonalInfo() {
-      if (!application?.applicant_id) return;
+    if (!application?.applicant_id) return;
+
+    const loadPersonalInfo = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
         const data = await fetchPersonalInfo(application.applicant_id);
         setPersonalInfo(data);
-      } catch (error) {
-        console.error("Error fetching personal info:", error);
+      } catch (err) {
+        console.error("Error fetching personal info:", err);
+        setError("Failed to load personal info");
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
     loadPersonalInfo();
   }, [application?.applicant_id]);
-
+  
   useEffect(() => {
     if (application) {
       setActiveTab("application");
