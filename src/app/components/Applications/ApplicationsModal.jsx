@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, Mail, Phone, X, Star, Send } from "lucide-react";
 import { fetchPersonalInfo } from "../../services/api";
+import { fetchQuestions } from "../../services/api";
 
 const ApplicationModal = ({ application, onClose, onAction }) => {
   const isOpen = !!application;
