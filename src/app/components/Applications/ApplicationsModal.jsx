@@ -52,8 +52,12 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   // Fetch personal info
   useEffect(() => {
-    if (!application?.applicant_id) {
-      console.log("No applicant_id found yet:", application);
+    if (!application) {
+      console.log("Application not yet available");
+      return;
+    }
+    if (!application.applicant_id) {
+      console.log("No applicant_id found:", application);
       return;
     }
 
@@ -75,7 +79,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     };
 
     loadPersonalInfo();
-  }, [application?.applicant_id]);
+  }, [application]); // 👈 Watch the full object
 
   useEffect(() => {
     if (application) {
