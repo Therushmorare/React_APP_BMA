@@ -15,6 +15,13 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [interviewTime, setInterviewTime] = useState('');
   const [interviewType, setInterviewType] = useState('');
 
+  // Safe date formatter
+  const formatDate = (date) => {
+    if (!date) return '—';
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB');
+  };
+
   const emailTemplates = [
     { value: 'reject', label: 'Reject Application' },
     { value: 'interview', label: 'Schedule Interview' },
@@ -42,9 +49,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   if (!application) return null;
 
   const handleDeleteApplication = () => {
-    if (onAction) {
-      onAction(application.id, 'delete');
-    }
+    if (onAction) onAction(application.id, 'delete');
     setShowDeleteConfirm(false);
     onClose();
   };
@@ -56,9 +61,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
       time: interviewTime,
       type: interviewType
     });
-    if (onAction) {
-      onAction(application.id, 'schedule', { date: interviewDate, time: interviewTime, type: interviewType });
-    }
+    if (onAction) onAction(application.id, 'schedule', { date: interviewDate, time: interviewTime, type: interviewType });
     setShowInterviewSchedule(false);
     onClose();
   };
@@ -89,7 +92,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     <>
       {/* Sliding Panel */}
       <div className={`fixed top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : 'translate-x-full '
+        isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="h-full flex backdrop-blur-sm flex-col">
           {/* Header */}
@@ -98,10 +101,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               <h2 className="text-xl font-semibold text-gray-800">Application Details</h2>
               <p className="text-sm text-gray-500 mt-1">{application.applicationId}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -164,9 +164,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 </div>
                 <div>
                   <span className="text-gray-600">Applied:</span>
-                    <p className="text-gray-900 font-medium">
-                      {application.appliedDate ?? "Date not available"}
-                    </p>
+                  <p className="text-gray-900 font-medium">{formatDate(application.appliedDate)}</p>
                 </div>
               </div>
             </div>
@@ -208,7 +206,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                   ))}
 
                   {/* Skills Section */}
-                  {application.skills && application.skills.length > 0 && (
+                  {application.skills?.length > 0 && (
                     <div className="space-y-3 mt-6">
                       <h4 className="font-medium text-gray-900">Skills & Technologies</h4>
                       <div className="flex flex-wrap gap-2">
@@ -326,39 +324,23 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
             {/* Documents Section */}
             <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">Documents</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                onClick={() => console.log('Download CV')}
-                className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <FileText size={16} className="text-green-700" />
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">CV.pdf</p>
-                  <p className="text-xs text-gray-500">
-                    {application.appliedDate 
-                      ? new Date(application.appliedDate).toLocaleDateString('en-GB') 
-                      : '—'}
-                  </p>
-                </div>
-              </button>
-              
-              <button
-                onClick={() => console.log('Download Driver License')}
-                className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <FileText size={16} className="text-green-700" />
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">Driver's Licence.pdf</p>
-                  <p className="text-xs text-gray-500">
-                    {application.appliedDate 
-                      ? new Date(application.appliedDate).toLocaleDateString('en-GB') 
-                      : '—'}
-                  </p>
-                </div>
-              </button>
+              <h4 className="font-medium text-gray-900">Documents</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {['CV.pdf', "Driver's Licence.pdf"].map((doc, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => console.log(`Download ${doc}`)}
+                    className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <FileText size={16} className="text-green-700" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium text-gray-900">{doc}</p>
+                      <p className="text-xs text-gray-500">{formatDate(application.appliedDate)}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
           </div>
 
@@ -366,112 +348,105 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
           <div className="p-6 border-t border-gray-200 space-y-3">
             <button
               onClick={handleSubmit}
-              className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium"
+              className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800
+              transition-colors font-medium"
             >
-              Submit Changes
+              Save Changes
             </button>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setShowInterviewSchedule(true)}
-                className="w-full bg-white text-green-700 border border-green-700 py-2 rounded-lg hover:bg-green-50 transition-colors font-medium"
-              >
-                Schedule Interview
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="w-full bg-white text-red-600 border border-red-300 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium"
-              >
-                Delete
-              </button>
-            </div>
+
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full bg-red-100 text-red-700 py-3 rounded-lg hover:bg-red-200 transition-colors font-medium"
+            >
+              Delete Application
+            </button>
+
+            <button
+              onClick={() => setShowInterviewSchedule(true)}
+              className="w-full bg-blue-100 text-blue-700 py-3 rounded-lg hover:bg-blue-200 transition-colors font-medium"
+            >
+              Schedule Interview
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Interview Schedule Modal */}
-      {showInterviewSchedule && (
-        <div className="fixed inset-0 bg-blur-sm bg-opacity-50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Schedule Interview</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Interview Type
-                </label>
-                <select
-                  value={interviewType}
-                  onChange={(e) => setInterviewType(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-                >
-                  <option value="">Select type...</option>
-                  <option value="phone">Phone Screening</option>
-                  <option value="video">Video Interview</option>
-                  <option value="in-person">In-Person Interview</option>
-                  <option value="technical">Technical Assessment</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={interviewDate}
-                  onChange={(e) => setInterviewDate(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Time
-                </label>
-                <input
-                  type="time"
-                  value={interviewTime}
-                  onChange={(e) => setInterviewTime(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-                />
-              </div>
-            </div>
-            <div className="flex space-x-3 mt-6">
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-80">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Delete</h3>
+            <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this application? This action cannot be undone.</p>
+            <div className="flex justify-end space-x-3">
               <button
-                onClick={() => setShowInterviewSchedule(false)}
-                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleScheduleInterview}
-                disabled={!interviewType || !interviewDate || !interviewTime}
-                className="flex-1 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                onClick={handleDeleteApplication}
+                className="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white text-sm transition-colors"
               >
-                Confirm
+                Delete
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-opacity-50 z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Delete Application</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete the application from <strong>{application.candidateName}</strong>? This action cannot be undone.
-            </p>
-            <div className="flex space-x-3">
+      {/* Interview Schedule Modal */}
+      {showInterviewSchedule && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-80 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Schedule Interview</h3>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Date</label>
+              <input
+                type="date"
+                value={interviewDate}
+                onChange={(e) => setInterviewDate(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Time</label>
+              <input
+                type="time"
+                value={interviewTime}
+                onChange={(e) => setInterviewTime(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Type</label>
+              <select
+                value={interviewType}
+                onChange={(e) => setInterviewType(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+              >
+                <option value="">Select type...</option>
+                <option value="onsite">Onsite</option>
+                <option value="online">Online</option>
+                <option value="phone">Phone</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-4">
               <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                onClick={() => setShowInterviewSchedule(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleDeleteApplication}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                onClick={handleScheduleInterview}
+                className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-sm transition-colors"
               >
-                Delete
+                Schedule
               </button>
             </div>
           </div>
