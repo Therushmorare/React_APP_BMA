@@ -80,7 +80,7 @@ const ApplicationsTable = ({
   onSort, 
   onApplicationAction, 
   onViewApplication, 
-  actionLoading,
+  actionLoading = {},
   onClearFilters 
 }) => {
   
