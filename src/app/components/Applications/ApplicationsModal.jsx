@@ -57,7 +57,8 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
       setError(null);
 
       try {
-        const data = await fetchPersonalInfo(application.applicant_id);
+        user_data = "11940e57-78f0-4a9f-beaf-f6c20e449303";
+        const data = await fetchPersonalInfo(user_data);
         setPersonalInfo(data);
       } catch (err) {
         console.error("Error fetching personal info:", err);
@@ -69,7 +70,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
     loadPersonalInfo();
   }, [application?.applicant_id]);
-  
+
   useEffect(() => {
     if (application) {
       setActiveTab("application");
