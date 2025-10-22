@@ -1,45 +1,56 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { FileText, Mail, Phone, X, Star, Send } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { FileText, Mail, Phone, X, Star, Send } from "lucide-react";
 import { fetchPersonalInfo } from "../../services/api";
 
 const ApplicationModal = ({ application, onClose, onAction }) => {
   const isOpen = !!application;
+
+  // State
   const [personalInfo, setPersonalInfo] = useState(null);
-  const [activeTab, setActiveTab] = useState('application');
-  const [notes, setNotes] = useState('');
+  const [activeTab, setActiveTab] = useState("application");
+  const [notes, setNotes] = useState("");
   const [rating, setRating] = useState(0);
-  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInterviewSchedule, setShowInterviewSchedule] = useState(false);
-  const [interviewDate, setInterviewDate] = useState('');
-  const [interviewTime, setInterviewTime] = useState('');
-  const [interviewType, setInterviewType] = useState('');
-
-  // Safe date formatter
-  const formatDate = (date) => {
-    if (!date) return '—';
-    const d = new Date(date);
-    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB');
-  };
+  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewTime, setInterviewTime] = useState("");
+  const [interviewType, setInterviewType] = useState("");
 
   const emailTemplates = [
-    { value: 'reject', label: 'Reject Application' },
-    { value: 'interview', label: 'Schedule Interview' },
-    { value: 'shortlist', label: 'Shortlist Candidate' },
-    { value: 'onboarding', label: 'Onboarding Welcome' }
+    { value: "reject", label: "Reject Application" },
+    { value: "interview", label: "Schedule Interview" },
+    { value: "shortlist", label: "Shortlist Candidate" },
+    { value: "onboarding", label: "Onboarding Welcome" },
   ];
 
   const applicationQuestions = [
-    { question: "Why are you interested in this position?", answer: application?.coverLetter || "See cover letter below." },
-    { question: "What are your salary expectations?", answer: application?.salary || "Not specified" },
-    { question: "Years of experience?", answer: `${application?.experienceYears || 0} years` },
-    { question: "When can you start?", answer: "2 weeks notice period" }
+    {
+      question: "Why are you interested in this position?",
+      answer: application?.coverLetter || "See cover letter below.",
+    },
+    {
+      question: "What are your salary expectations?",
+      answer: application?.salary || "Not specified",
+    },
+    {
+      question: "Years of experience?",
+      answer: `${application?.experienceYears || 0} years`,
+    },
+    { question: "When can you start?", answer: "2 weeks notice period" },
   ];
 
-  // Fetch personal info when modal opens
+  const formatDate = (date) => {
+    if (!date) return "—";
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB");
+  };
+
+  // Fetch personal info
   useEffect(() => {
+    setPersonalInfo(null); // Reset while loading
     async function loadPersonalInfo() {
       if (!application?.applicant_id) return;
       try {
@@ -50,73 +61,80 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
       }
     }
     loadPersonalInfo();
-  }, [application?.applicant_id]); // <- use optional chaining here
+  }, [application?.applicant_id]);
 
   useEffect(() => {
     if (application) {
-      setActiveTab('application');
-      setNotes('');
+      setActiveTab("application");
+      setNotes("");
       setRating(0);
-      setSelectedTemplate('');
+      setSelectedTemplate("");
     }
   }, [application?.id]);
 
   if (!application) return null;
 
   const handleDeleteApplication = () => {
-    if (onAction) onAction(application.id, 'delete');
+    if (onAction) onAction(application.id, "delete");
     setShowDeleteConfirm(false);
     onClose();
   };
 
   const handleScheduleInterview = () => {
-    console.log('Scheduling interview:', {
-      candidateName: application.candidateName,
-      date: interviewDate,
-      time: interviewTime,
-      type: interviewType
-    });
-    if (onAction) onAction(application.id, 'schedule', { date: interviewDate, time: interviewTime, type: interviewType });
+    if (onAction)
+      onAction(application.id, "schedule", {
+        date: interviewDate,
+        time: interviewTime,
+        type: interviewType,
+      });
     setShowInterviewSchedule(false);
     onClose();
   };
 
   const handleSubmit = () => {
-    console.log('Submitting changes:', {
-      applicationId: application.id,
-      notes,
-      rating,
-      activeTab
-    });
+    if (onAction)
+      onAction(application.id, "update", {
+        notes,
+        rating,
+      });
     onClose();
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      'Applied': 'bg-gray-100 text-gray-800',
-      'Screening': 'bg-yellow-100 text-yellow-800',
-      'Interview': 'bg-blue-100 text-blue-800',
-      'Offer': 'bg-purple-100 text-purple-800',
-      'Hired': 'bg-green-100 text-green-800',
-      'Rejected': 'bg-red-100 text-red-800'
+      Applied: "bg-gray-100 text-gray-800",
+      Screening: "bg-yellow-100 text-yellow-800",
+      Interview: "bg-blue-100 text-blue-800",
+      Offer: "bg-purple-100 text-purple-800",
+      Hired: "bg-green-100 text-green-800",
+      Rejected: "bg-red-100 text-red-800",
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || "bg-gray-100 text-gray-800";
   };
 
   return (
     <>
       {/* Sliding Panel */}
-      <div className={`fixed top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
-        <div className="h-full flex backdrop-blur-sm flex-col">
+      <div
+        className={`fixed top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Application Details</h2>
-              <p className="text-sm text-gray-500 mt-1">{application.applicationId}</p>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Application Details
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {application.applicationId}
+              </p>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
               <X size={20} />
             </button>
           </div>
@@ -127,22 +145,30 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
             <div className="text-center">
               <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 mx-auto mb-4">
                 <img
-                  src={application.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(application.candidateName || 'User')}&background=22c55e&color=ffffff&size=128`}
+                  src={application.avatar}
                   alt={application.candidateName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(application.candidateName || 'User')}&background=22c55e&color=ffffff&size=128`;
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      application.candidateName
+                    )}&background=22c55e&color=ffffff&size=128`;
                   }}
                 />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{application.candidateName}</h3>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-3 ${getStatusColor(application.status)}`}>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {application.candidateName}
+              </h3>
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-3 ${getStatusColor(
+                  application.status
+                )}`}
+              >
                 {application.status}
               </span>
               <p className="text-gray-600 font-medium">{application.position}</p>
             </div>
 
-            {/* Contact & Basic Info */}
+            {/* Contact & Personal Info */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center space-x-2 text-sm">
@@ -155,17 +181,20 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 </div>
               </div>
 
-              {/* Quick Info Card */}
               <div className="space-y-4">
                 {personalInfo ? (
                   <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-gray-600">Name:</span>
-                      <p className="text-gray-900 font-medium">{personalInfo.first_name} {personalInfo.last_name}</p>
+                      <p className="text-gray-900 font-medium">
+                        {personalInfo.first_name} {personalInfo.last_name}
+                      </p>
                     </div>
                     <div>
                       <span className="text-gray-600">Phone:</span>
-                      <p className="text-gray-900 font-medium">{personalInfo.phone_number}</p>
+                      <p className="text-gray-900 font-medium">
+                        {personalInfo.phone_number}
+                      </p>
                     </div>
                     <div>
                       <span className="text-gray-600">City:</span>
@@ -181,11 +210,15 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                     </div>
                     <div>
                       <span className="text-gray-600">Date of Birth:</span>
-                      <p className="text-gray-900 font-medium">{formatDate(personalInfo.date_of_birth)}</p>
+                      <p className="text-gray-900 font-medium">
+                        {formatDate(personalInfo.date_of_birth)}
+                      </p>
                     </div>
                     <div className="col-span-2">
                       <span className="text-gray-600">Address:</span>
-                      <p className="text-gray-900 font-medium">{personalInfo.physical_address}, {personalInfo.postal_code}</p>
+                      <p className="text-gray-900 font-medium">
+                        {personalInfo.physical_address}, {personalInfo.postal_code}
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -194,173 +227,151 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               </div>
             </div>
 
-            {/* Tabs and Tab Content */}
-            <div className="border-b border-gray-200">
-              <div className="flex space-x-0">
-                {['application', 'evaluation', 'email'].map(tab => (
+            {/* Tabs */}
+            <div>
+              <div className="flex space-x-4 border-b border-gray-200 mb-4">
+                {["application", "evaluation", "email", "documents"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    className={`py-2 px-4 text-sm font-medium ${
                       activeTab === tab
-                        ? 'border-green-700 text-green-700'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? "border-b-2 border-green-600 text-green-700"
+                        : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
                     {tab.charAt(0).toUpperCase() + tab.slice(1)}
                   </button>
                 ))}
               </div>
-            </div>
 
-            <div className="space-y-4">
-              {/* Application Tab */}
-              {activeTab === 'application' && (
-                <div className="space-y-4">
-                  <h4 className="font-medium text-gray-900">Application Questions</h4>
-                  {applicationQuestions.map((item, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-4">
-                      <p className="font-medium text-gray-800 mb-2">{item.question}</p>
-                      <p className="text-gray-600 text-sm">{item.answer}</p>
-                    </div>
-                  ))}
-
-                  {/* Skills */}
-                  {application.skills?.length > 0 && (
-                    <div className="space-y-3 mt-6">
-                      <h4 className="font-medium text-gray-900">Skills & Technologies</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {application.skills.map((skill, idx) => (
-                          <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">{skill}</span>
-                        ))}
+              {/* Tab content */}
+              <div>
+                {activeTab === "application" && (
+                  <div className="space-y-3 text-sm">
+                    {applicationQuestions.map((q, idx) => (
+                      <div key={idx} className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-gray-600 font-medium">{q.question}</p>
+                        <p className="text-gray-900">{q.answer}</p>
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
+                )}
 
-                  {/* Cover Letter */}
-                  {application.coverLetter && (
-                    <div className="space-y-3 mt-6">
-                      <h4 className="font-medium text-gray-900">Cover Letter</h4>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-700 leading-relaxed">{application.coverLetter}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Internal Notes */}
-                  {application.notes && (
-                    <div className="space-y-3 mt-6">
-                      <h4 className="font-medium text-gray-900">Internal Notes</h4>
-                      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                        <p className="text-sm text-gray-700">{application.notes}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Evaluation Tab */}
-              {activeTab === 'evaluation' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                {activeTab === "evaluation" && (
+                  <div className="space-y-3 text-sm">
+                    <label className="block text-gray-700 font-medium">Notes</label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
+                      className="w-full border rounded-lg p-2"
                       rows={4}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-                      placeholder="Add your evaluation notes here..."
+                    />
+                    <label className="block text-gray-700 font-medium mt-2">Rating</label>
+                    <input
+                      type="number"
+                      value={rating}
+                      min={0}
+                      max={5}
+                      onChange={(e) => setRating(Number(e.target.value))}
+                      className="w-full border rounded-lg p-2"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
-                    <div className="flex space-x-1">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <button
-                          key={star}
-                          onClick={() => setRating(star)}
-                          className={`p-1 transition-colors ${star <= rating ? 'text-yellow-500' : 'text-gray-300'}`}
-                        >
-                          <Star size={20} fill={star <= rating ? 'currentColor' : 'none'} />
-                        </button>
-                      ))}
-                      <span className="ml-2 text-sm text-gray-600">{rating > 0 ? `${rating}/5` : 'No rating'}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Email Tab */}
-              {activeTab === 'email' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Templates</label>
+                {activeTab === "email" && (
+                  <div className="space-y-3 text-sm">
+                    <label className="block text-gray-700 font-medium">Select Template</label>
                     <select
                       value={selectedTemplate}
                       onChange={(e) => setSelectedTemplate(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+                      className="w-full border rounded-lg p-2"
                     >
-                      <option value="">Select template...</option>
-                      {emailTemplates.map(template => (
-                        <option key={template.value} value={template.value}>{template.label}</option>
+                      <option value="">Select a template</option>
+                      {emailTemplates.map((template) => (
+                        <option key={template.value} value={template.value}>
+                          {template.label}
+                        </option>
                       ))}
                     </select>
+                    <button
+                      onClick={() => alert(`Email sent using ${selectedTemplate}`)}
+                      className="mt-2 bg-green-700 text-white px-4 py-2 rounded-lg"
+                    >
+                      Send Email
+                    </button>
                   </div>
-                  {selectedTemplate && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h5 className="font-medium text-gray-900">{emailTemplates.find(t => t.value === selectedTemplate)?.label}</h5>
-                        <button className="flex items-center space-x-1 px-3 py-1 bg-green-700 text-white rounded text-sm hover:bg-green-800 transition-colors">
-                          <Send size={14} />
-                          <span>Send</span>
-                        </button>
-                      </div>
-                      <p className="text-sm text-gray-600">Template preview will be shown here...</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Documents Section */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Documents</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {['CV.pdf', "Driver's Licence.pdf"].map((doc, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => console.log(`Download ${doc}`)}
-                    className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <FileText size={16} className="text-green-700" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-gray-900">{doc}</p>
-                      <p className="text-xs text-gray-500">{formatDate(application.appliedDate)}</p>
-                    </div>
-                  </button>
-                ))}
+                {activeTab === "documents" && (
+                  <div className="space-y-2 text-sm">
+                    {application.documents?.length > 0 ? (
+                      application.documents.map((doc, idx) => (
+                        <a
+                          key={idx}
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-green-700 underline"
+                        >
+                          {doc.name}
+                        </a>
+                      ))
+                    ) : (
+                      <p className="text-gray-500">No documents available</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Footer */}
           <div className="p-6 border-t border-gray-200 space-y-3">
-            <button onClick={handleSubmit} className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium">Save Changes</button>
-            <button onClick={() => setShowDeleteConfirm(true)} className="w-full bg-red-100 text-red-700 py-3 rounded-lg hover:bg-red-200 transition-colors font-medium">Delete Application</button>
-            <button onClick={() => setShowInterviewSchedule(true)} className="w-full bg-blue-100 text-blue-700 py-3 rounded-lg hover:bg-blue-200 transition-colors font-medium">Schedule Interview</button>
+            <button
+              onClick={handleSubmit}
+              className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium"
+            >
+              Save Changes
+            </button>
+
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full bg-red-100 text-red-700 py-3 rounded-lg hover:bg-red-200 transition-colors font-medium"
+            >
+              Delete Application
+            </button>
+
+            <button
+              onClick={() => setShowInterviewSchedule(true)}
+              className="w-full bg-blue-100 text-blue-700 py-3 rounded-lg hover:bg-blue-200 transition-colors font-medium"
+            >
+              Schedule Interview
+            </button>
           </div>
         </div>
       </div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-80">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Delete</h3>
-            <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this application? This action cannot be undone.</p>
-            <div className="flex justify-end space-x-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm transition-colors">Cancel</button>
-              <button onClick={handleDeleteApplication} className="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white text-sm transition-colors">Delete</button>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-6 space-y-4 w-80 text-center">
+            <p className="text-gray-800 font-medium">
+              Are you sure you want to delete this application?
+            </p>
+            <div className="flex justify-between space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 bg-gray-200 py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteApplication}
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -368,29 +379,43 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
       {/* Interview Schedule Modal */}
       {showInterviewSchedule && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-80 space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Schedule Interview</h3>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Date</label>
-              <input type="date" value={interviewDate} onChange={(e) => setInterviewDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"/>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Time</label>
-              <input type="time" value={interviewTime} onChange={(e) => setInterviewTime(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"/>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Type</label>
-              <select value={interviewType} onChange={(e) => setInterviewType(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100">
-                <option value="">Select Type</option>
-                <option value="onsite">Onsite</option>
-                <option value="virtual">Virtual</option>
-                <option value="phone">Phone</option>
-              </select>
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button onClick={() => setShowInterviewSchedule(false)} className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm transition-colors">Cancel</button>
-              <button onClick={handleScheduleInterview} className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-sm transition-colors">Schedule</button>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-6 space-y-4 w-80 text-center">
+            <p className="text-gray-800 font-medium">Schedule Interview</p>
+            <input
+              type="date"
+              value={interviewDate}
+              onChange={(e) => setInterviewDate(e.target.value)}
+              className="w-full border rounded-lg p-2"
+            />
+            <input
+              type="time"
+              value={interviewTime}
+              onChange={(e) => setInterviewTime(e.target.value)}
+              className="w-full border rounded-lg p-2"
+            />
+            <select
+              value={interviewType}
+              onChange={(e) => setInterviewType(e.target.value)}
+              className="w-full border rounded-lg p-2"
+            >
+              <option value="">Select Type</option>
+              <option value="online">Online</option>
+              <option value="onsite">Onsite</option>
+            </select>
+            <div className="flex justify-between space-x-3">
+              <button
+                onClick={() => setShowInterviewSchedule(false)}
+                className="flex-1 bg-gray-200 py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScheduleInterview}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-lg"
+              >
+                Schedule
+              </button>
             </div>
           </div>
         </div>
