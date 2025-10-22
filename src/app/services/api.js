@@ -63,3 +63,18 @@ export async function fetchQuestions(jobId, applicantId) {
 
   return res.json();
 }
+
+export async function fetchApplicationScore(jobId, applicantId) {
+  if (!jobId || !applicantId) throw new Error("Missing jobId or applicantId");
+
+  const res = await fetch(`https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/applicationScore/${jobId}/${applicantId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch Application Score for ${applicantId}`);
+  }
+
+  return res.json();
+}

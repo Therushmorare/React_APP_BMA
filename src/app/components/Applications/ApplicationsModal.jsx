@@ -24,9 +24,9 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [interviewTime, setInterviewTime] = useState("");
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [interviewType, setInterviewType] = useState("");
-  const [scoreData, setScoreData] = useState(null);
+  const [score, setScore] = useState(null);
   const [loadingScore, setLoadingScore] = useState(false);
-  const [errorScore, setErrorScore] = useState("");
+  const [scoreError, setScoreError] = useState("");
 
   const emailTemplates = [
     { value: "reject", label: "Reject Application" },
@@ -99,35 +99,21 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   // Fetch Score Data
   useEffect(() => {
-    const fetchScore = async () => {
-      if (!application?.job_id || !application?.id) {
-        console.warn("Missing job_id or applicant_id for score fetch");
-        return;
-      }
-
-      setLoadingScore(true);
-      setErrorScore("");
-
-      try {
-        const res = await fetch(
-          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/applicationScore/${application.job_id}/${application.id}`
-        );
-
-        if (!res.ok) throw new Error(`Failed to fetch score (${res.status})`);
-
-        const data = await res.json();
-        console.log("Fetched score data:", data);
-        setScoreData(data);
-      } catch (err) {
-        console.error("Error fetching application score:", err);
-        setErrorScore("Failed to load score data");
-      } finally {
-        setLoadingScore(false);
-      }
-    };
-
-    if (activeTab === "score") {
-      fetchScore();
+    if (activeTab === "score" && application?.id && application?.applicationId) {
+      const loadScore = async () => {
+        setLoadingScore(true);
+        setScoreError("");
+        try {
+          const data = await fetchApplicationScore(application.job_id, application.id);
+          setScore(data);
+        } catch (err) {
+          console.error("Error fetching score:", err);
+          setScoreError("Failed to load score");
+        } finally {
+          setLoadingScore(false);
+        }
+      };
+      loadScore();
     }
   }, [activeTab, application]);
 
@@ -350,11 +336,11 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                         <ApplicationScoreCard label="Candidate Application Score" value={score.candidate_application_score} max={10} />
                       </>
                     ) : (
-                      <p className="text-gray-500">No score available for this applicant.</p>
+                      <p className="text-gray-500">{scoreError || "No score available for this applicant."}</p>
                     )}
                   </div>
                 )}
-                
+
                 {activeTab === "evaluation" && (
                   <div className="space-y-3 text-sm">
                     <label className="block text-gray-700 font-medium">Notes</label>
