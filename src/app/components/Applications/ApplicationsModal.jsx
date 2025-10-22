@@ -52,22 +52,18 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   // Fetch personal info
   useEffect(() => {
-    if (!application) {
-      console.log("Application not yet available");
-      return;
-    }
-    if (!application.applicant_id) {
-      console.log("No applicant_id found:", application);
+    if (!application?.id) {
+      console.log("No applicant ID yet:", application);
       return;
     }
 
     const loadPersonalInfo = async () => {
       setLoading(true);
       setError(null);
-      console.log("Fetching personal info for:", application.applicant_id);
+      console.log("Fetching personal info for:", application.id);
 
       try {
-        const data = await fetchPersonalInfo(application.applicant_id);
+        const data = await fetchPersonalInfo(application.id);
         console.log("Fetched data:", data);
         setPersonalInfo(data);
       } catch (err) {
@@ -79,7 +75,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     };
 
     loadPersonalInfo();
-  }, [application]); // 👈 Watch the full object
+  }, [application]);
 
   useEffect(() => {
     if (application) {
