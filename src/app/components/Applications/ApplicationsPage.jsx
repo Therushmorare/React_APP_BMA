@@ -45,6 +45,7 @@ export default function ApplicationsPage() {
 
         const formatted = applicantsArray.map((item) => ({
           id: item.applicant_id ?? "",
+          job_id: item.job_id ?? "",
           applicationId: item.application_code ?? "",
           candidateName: `${item.first_name ?? ""} ${item.last_name ?? ""}`,
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
