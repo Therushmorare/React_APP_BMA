@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { FileText, Mail, Phone, X, Star, Send, Loader } from "lucide-react";
 import { fetchPersonalInfo } from "../../services/api";
 import { fetchQuestions } from "../../services/api";
+import ApplicationScoreCard from "./ScoreCard";
 
 const ApplicationModal = ({ application, onClose, onAction }) => {
   const isOpen = !!application;
@@ -39,21 +40,6 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     const d = new Date(date);
     return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB");
   };
-
-  const ScoreCard = ({ label, value }) => (
-    <div className="p-4 border border-gray-200 rounded-xl shadow-sm bg-white">
-      <p className="text-gray-600 text-sm">{label}</p>
-      <div className="mt-2 w-full bg-gray-100 rounded-full h-3">
-        <div
-          className="bg-green-600 h-3 rounded-full transition-all duration-500"
-          style={{ width: `${Math.min(value * 10, 100)}%` }}
-        ></div>
-      </div>
-      <p className="text-right text-gray-700 text-sm mt-1 font-semibold">
-        {value}/10
-      </p>
-    </div>
-  );
   
   // Fetch personal info
   useEffect(() => {
@@ -350,40 +336,25 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 )}
                 
                 {activeTab === "score" && (
-                  <div className="space-y-6">
+                  <div className="space-y-3 text-sm">
                     {loadingScore ? (
-                      <div className="flex justify-center items-center py-6">
-                        <Loader className="animate-spin text-green-600" size={24} />
-                        <span className="ml-2 text-gray-600">Loading score...</span>
+                      <div className="flex justify-center items-center">
+                        <Loader className="animate-spin text-green-700" size={24} />
                       </div>
-                    ) : errorScore ? (
-                      <div className="text-center text-red-500">{errorScore}</div>
-                    ) : scoreData ? (
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800">Application Score</h3>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <ScoreCard label="Experience Score" value={scoreData.experience_score} />
-                          <ScoreCard label="Location Score" value={scoreData.location_score} />
-                          <ScoreCard label="Qualification Score" value={scoreData.qualification_score} />
-                          <ScoreCard label="Salary Score" value={scoreData.salary_score} />
-                        </div>
-
-                        <div className="mt-6 p-4 bg-green-50 rounded-lg text-center">
-                          <p className="text-gray-700 font-medium">
-                            Candidate Total Score:
-                            <span className="text-green-700 font-bold ml-2">
-                              {scoreData.candidate_application_score}/10
-                            </span>
-                          </p>
-                        </div>
-                      </div>
+                    ) : score ? (
+                      <>
+                        <ApplicationScoreCard label="Experience Score" value={score.experience_score} />
+                        <ApplicationScoreCard label="Location Score" value={score.location_score} />
+                        <ApplicationScoreCard label="Qualification Score" value={score.qualification_score} />
+                        <ApplicationScoreCard label="Salary Score" value={score.salary_score} />
+                        <ApplicationScoreCard label="Candidate Application Score" value={score.candidate_application_score} max={10} />
+                      </>
                     ) : (
-                      <div className="text-gray-500 text-center py-6">No score data available.</div>
+                      <p className="text-gray-500">No score available for this applicant.</p>
                     )}
                   </div>
                 )}
-
+                
                 {activeTab === "evaluation" && (
                   <div className="space-y-3 text-sm">
                     <label className="block text-gray-700 font-medium">Notes</label>
