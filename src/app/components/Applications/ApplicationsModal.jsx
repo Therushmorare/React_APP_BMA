@@ -21,6 +21,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [showInterviewSchedule, setShowInterviewSchedule] = useState(false);
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("");
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [interviewType, setInterviewType] = useState("");
 
   const emailTemplates = [
