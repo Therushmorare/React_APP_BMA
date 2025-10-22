@@ -34,13 +34,16 @@ export default function ApplicationsPage() {
     const loadApplications = async () => {
       try {
         const data = await fetchAllApplicants();
-        console.log("Fetched data:", data); // 👀 Check what’s coming from API
+        console.log("Fetched data:", data);
 
-        if (!data || !Array.isArray(data)) {
-          throw new Error("Invalid data format from API");
-        }
+        if (!data) throw new Error("No data returned from API");
 
-        const formatted = data.map((item) => ({
+        // Handle both object or array data
+        const applicantsArray = Array.isArray(data)
+          ? data
+          : Object.values(data);
+
+        const formatted = applicantsArray.map((item) => ({
           id: item.applicant_id ?? "",
           applicationId: item.application_code ?? "",
           candidateName: `${item.first_name ?? ""} ${item.last_name ?? ""}`,
@@ -52,6 +55,8 @@ export default function ApplicationsPage() {
           status: item.application_status ?? "Pending",
         }));
 
+        console.log("Formatted applicants:", formatted);
+
         setApplications(formatted);
         setFilteredApplications(formatted);
       } catch (err) {
@@ -61,7 +66,6 @@ export default function ApplicationsPage() {
         setLoading(false);
       }
     };
-
     loadApplications();
   }, []);
 
