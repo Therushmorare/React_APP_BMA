@@ -78,7 +78,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
       console.log(`Fetching questions for Job ${jobId}, Applicant ${applicantId}`);
 
       try {
-        const data = await fetchApplicationQuestions(jobId, applicantId);
+        const data = await fetchQuestions(jobId, applicantId);
         console.log("Fetched application questions:", data);
         setApplicationQuestions(data || []);
       } catch (err) {
@@ -293,7 +293,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                     )}
                   </div>
                 )}
-                
+
                 {activeTab === "evaluation" && (
                   <div className="space-y-3 text-sm">
                     <label className="block text-gray-700 font-medium">Notes</label>
