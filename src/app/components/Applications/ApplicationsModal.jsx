@@ -80,18 +80,6 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     loadData();
   }, [application]);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-32">
-        <Loader className="animate-spin text-green-700" size={32} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
-  }
-
   // Fetch application questions and answers
   useEffect(() => {
     const applicantId = application?.id;
@@ -302,6 +290,73 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                   </div>
                 )}
               </div>
+
+              {/* Skills as badges */}
+              <div className="col-span-2">
+                <span className="text-gray-600">Skills:</span>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {skills.length > 0 ? (
+                    skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-semibold"
+                      >
+                        {skill}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-gray-500">No skills listed</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Education collapsible */}
+              <div className="col-span-2">
+                <button
+                  onClick={() => setEduOpen(!eduOpen)}
+                  className="flex items-center justify-between w-full bg-gray-200 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Education {eduOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {eduOpen && (
+                  <ul className="mt-2 list-disc list-inside text-gray-900 text-sm">
+                    {education.length > 0 ? (
+                      education.map((edu) => (
+                        <li key={edu.qualification_id}>
+                          {edu.qualification} - {edu.institution} ({edu.year_completed})
+                        </li>
+                      ))
+                    ) : (
+                      <li>No education listed</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+
+              {/* Experience collapsible */}
+              <div className="col-span-2">
+                <button
+                  onClick={() => setExpOpen(!expOpen)}
+                  className="flex items-center justify-between w-full bg-gray-200 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Experience {expOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {expOpen && (
+                  <ul className="mt-2 list-disc list-inside text-gray-900 text-sm">
+                    {experience.length > 0 ? (
+                      experience.map((exp) => (
+                        <li key={exp.experience_id}>
+                          {exp.title} at {exp.organization} ({formatDate(exp.start_date)} - {formatDate(exp.end_date)})
+                          {exp.description && `: ${exp.description}`}
+                        </li>
+                      ))
+                    ) : (
+                      <li>No experience listed</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+
             </div>
 
             {/* Tabs */}
