@@ -326,35 +326,40 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
             {/* Documents Section */}
             <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Documents</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={() => console.log('Download CV')}
-                  className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <FileText size={16} className="text-green-700" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900">CV.pdf</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(application.appliedDate).toLocaleDateString('en-GB')}
-                    </p>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => console.log('Download Driver License')}
-                  className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <FileText size={16} className="text-green-700" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900">Driver's Licence.pdf</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(application.appliedDate).toLocaleDateString('en-GB')}
-                    </p>
-                  </div>
-                </button>
-              </div>
+            <h4 className="font-medium text-gray-900">Documents</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={() => console.log('Download CV')}
+                className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <FileText size={16} className="text-green-700" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">CV.pdf</p>
+                  <p className="text-xs text-gray-500">
+                    {application.appliedDate 
+                      ? new Date(application.appliedDate).toLocaleDateString('en-GB') 
+                      : '—'}
+                  </p>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => console.log('Download Driver License')}
+                className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <FileText size={16} className="text-green-700" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-900">Driver's Licence.pdf</p>
+                  <p className="text-xs text-gray-500">
+                    {application.appliedDate 
+                      ? new Date(application.appliedDate).toLocaleDateString('en-GB') 
+                      : '—'}
+                  </p>
+                </div>
+              </button>
             </div>
+          </div>
+
           </div>
 
           {/* Footer with Action Buttons */}
