@@ -65,31 +65,32 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   // Fetch application questions and answers
   useEffect(() => {
-    if (!application) return;
+    const applicantId = application?.id;
+    const jobId = application?.job_id;
+
+    if (!applicantId || !jobId) {
+      console.warn("Missing applicantId or jobId:", { applicantId, jobId });
+      return;
+    }
 
     const loadQuestions = async () => {
-      const jobId = application.job_id; // exact key from your backend
-      const applicantId = application.applicant_id || application.id;
-
-      if (!jobId || !applicantId) {
-        console.warn("Missing job_id or applicant_id:", { jobId, applicantId, application });
-        return;
-      }
-
-      console.log("Fetching questions for:", { jobId, applicantId });
+      setLoadingQuestions(true);
+      console.log(`Fetching questions for Job ${jobId}, Applicant ${applicantId}`);
 
       try {
-        const data = await fetchQuestions(jobId, applicantId);
+        const data = await fetchApplicationQuestions(jobId, applicantId);
         console.log("Fetched application questions:", data);
-        setApplicationQuestions(data);
+        setApplicationQuestions(data || []);
       } catch (err) {
         console.error("Error fetching questions:", err);
-        setError("Failed to load questions");
+        setApplicationQuestions([]);
+      } finally {
+        setLoadingQuestions(false);
       }
     };
 
     loadQuestions();
-  }, [application]);
+  }, [application?.id, application?.job_id]);
 
   useEffect(() => {
     if (application) {
@@ -276,23 +277,23 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               <div>
                 {activeTab === "application" && (
                   <div className="space-y-3 text-sm">
-                    {applicationQuestions.length > 0 ? (
+                    {loadingQuestions ? (
+                      <p>Loading questions...</p>
+                    ) : applicationQuestions.length === 0 ? (
+                      <p className="text-gray-500">
+                        No questions found for this applicant.
+                      </p>
+                    ) : (
                       applicationQuestions.map((q, idx) => (
                         <div key={idx} className="bg-gray-50 p-3 rounded-lg">
                           <p className="text-gray-600 font-medium">{q.question}</p>
                           <p className="text-gray-900">{q.response}</p>
                         </div>
                       ))
-                    ) : (
-                      <p className="text-gray-500 text-sm">
-                        {loading
-                          ? "Loading questions..."
-                          : "No questions found for this applicant."}
-                      </p>
                     )}
                   </div>
                 )}
-
+                
                 {activeTab === "evaluation" && (
                   <div className="space-y-3 text-sm">
                     <label className="block text-gray-700 font-medium">Notes</label>
