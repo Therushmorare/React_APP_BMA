@@ -5,6 +5,9 @@ import { FileText, Mail, Phone, X, Star, Send, Loader } from "lucide-react";
 import { fetchPersonalInfo } from "../../services/api";
 import { fetchQuestions } from "../../services/api";
 import { fetchApplicationScore } from "../../services/api";
+import { fetchEducation } from "../../services/api";
+import { fetchExperience } from "../../services/api";
+import { fetchSkills } from "../../services/api";
 import ApplicationScoreCard from "./ApplicationScoreCard";
 
 const ApplicationModal = ({ application, onClose, onAction }) => {
@@ -28,6 +31,11 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [score, setScore] = useState(null);
   const [loadingScore, setLoadingScore] = useState(false);
   const [scoreError, setScoreError] = useState("");
+  const [education, setEducation] = useState([]);
+  const [experience, setExperience] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [eduOpen, setEduOpen] = useState(true);
+  const [expOpen, setExpOpen] = useState(true);
 
   const emailTemplates = [
     { value: "reject", label: "Reject Application" },
@@ -44,30 +52,45 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   
   // Fetch personal info
   useEffect(() => {
-    if (!application?.id) {
-      console.log("No applicant ID yet:", application);
-      return;
-    }
+    if (!application?.id) return;
 
-    const loadPersonalInfo = async () => {
+    const loadData = async () => {
       setLoading(true);
-      setError(null);
-      console.log("Fetching personal info for:", application.id);
-
+      setError("");
       try {
-        const data = await fetchPersonalInfo(application.id);
-        console.log("Fetched data:", data);
-        setPersonalInfo(data);
+        const [personal, edu, exp, sk] = await Promise.all([
+          fetchPersonalInfo(application.id),
+          fetchEducation(application.id),
+          fetchExperience(application.id),
+          fetchSkills(application.id),
+        ]);
+
+        setPersonalInfo(personal);
+        setEducation(edu);
+        setExperience(exp);
+        setSkills(sk.skills || []);
       } catch (err) {
-        console.error("Error fetching personal info:", err);
-        setError("Failed to load personal info");
+        console.error("Error loading applicant data:", err);
+        setError("Failed to load applicant data");
       } finally {
         setLoading(false);
       }
     };
 
-    loadPersonalInfo();
+    loadData();
   }, [application]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-32">
+        <Loader className="animate-spin text-green-700" size={32} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
+  }
 
   // Fetch application questions and answers
   useEffect(() => {

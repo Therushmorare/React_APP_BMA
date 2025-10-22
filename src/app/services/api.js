@@ -47,6 +47,66 @@ export async function fetchPersonalInfo(applicantId) {
   return data;
 }
 
+export async function fetchEducation(applicantId) {
+  console.log("Attempting to fetch education info for:", applicantId); // 🔥
+  const res = await fetch(
+    `https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/myEducation/${applicantId}`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch education info for ${applicantId}`);
+  }
+
+  const data = await res.json();
+  console.log("Received data:", data); // 🔥
+  return data;
+}
+
+export async function fetchExperience(applicantId) {
+  console.log("Attempting to fetch experience info for:", applicantId); // 🔥
+  const res = await fetch(
+    `https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/myExperience/${applicantId}`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch experience info for ${applicantId}`);
+  }
+
+  const data = await res.json();
+  console.log("Received data:", data); // 🔥
+  return data;
+}
+
+export async function fetchSkills(applicantId) {
+  console.log("Attempting to fetch skill info for:", applicantId); // 🔥
+  const res = await fetch(
+    `https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/mySkills/${applicantId}`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch skills info for ${applicantId}`);
+  }
+
+  const data = await res.json();
+  console.log("Received data:", data); // 🔥
+  return data;
+}
+
 export async function fetchQuestions(jobId, applicantId) {
   const res = await fetch(
     `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/applicationQuestions/${jobId}/${applicantId}`,
