@@ -34,25 +34,34 @@ export default function ApplicationsPage() {
     const loadApplications = async () => {
       try {
         const data = await fetchAllApplicants();
+        console.log("Fetched data:", data); // 👀 Check what’s coming from API
+
+        if (!data || !Array.isArray(data)) {
+          throw new Error("Invalid data format from API");
+        }
+
         const formatted = data.map((item) => ({
-          id: item.applicant_id,
-          applicationId: item.application_code,
-          candidateName: `${item.first_name} ${item.last_name}`,
+          id: item.applicant_id ?? "",
+          applicationId: item.application_code ?? "",
+          candidateName: `${item.first_name ?? ""} ${item.last_name ?? ""}`,
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            item.first_name + " " + item.last_name
+            (item.first_name ?? "") + " " + (item.last_name ?? "")
           )}&background=22c55e&color=ffffff&size=128`,
-          email: item.email,
-          phone: item.phone_number,
-          status: item.application_status,
+          email: item.email ?? "N/A",
+          phone: item.phone_number ?? "N/A",
+          status: item.application_status ?? "Pending",
         }));
+
         setApplications(formatted);
         setFilteredApplications(formatted);
       } catch (err) {
+        console.error("Error loading applications:", err);
         setError(err.message || "Error fetching applications");
       } finally {
         setLoading(false);
       }
     };
+
     loadApplications();
   }, []);
 
