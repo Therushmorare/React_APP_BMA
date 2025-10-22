@@ -65,30 +65,26 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   // Fetch application questions and answers
   useEffect(() => {
-    if (!application?.id && !application?.job_id) {
-      console.log("Missing application data:", application);
-      return;
-    }
+    if (!application) return;
 
     const loadQuestions = async () => {
-      setLoading(true);
-      setError(null);
+      const jobId = application.job_id; // exact key from your backend
+      const applicantId = application.applicant_id || application.id;
+
+      if (!jobId || !applicantId) {
+        console.warn("Missing job_id or applicant_id:", { jobId, applicantId, application });
+        return;
+      }
+
+      console.log("Fetching questions for:", { jobId, applicantId });
 
       try {
-        // The correct fields from your data
-        const jobId = application.job_id;
-        const applicantId = application.id || application.applicant_id;
-
-        console.log("Fetching questions for:", { jobId, applicantId });
-
         const data = await fetchQuestions(jobId, applicantId);
         console.log("Fetched application questions:", data);
         setApplicationQuestions(data);
       } catch (err) {
         console.error("Error fetching questions:", err);
         setError("Failed to load questions");
-      } finally {
-        setLoading(false);
       }
     };
 

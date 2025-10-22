@@ -48,8 +48,6 @@ export async function fetchPersonalInfo(applicantId) {
 }
 
 export async function fetchQuestions(jobId, applicantId) {
-  console.log("Attempting to fetch questions for:", applicantId); // 🔥
-  
   const res = await fetch(
     `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/applicationQuestions/${jobId}/${applicantId}`,
     {
@@ -63,7 +61,5 @@ export async function fetchQuestions(jobId, applicantId) {
     throw new Error(`Failed to fetch Job Questions for ${applicantId}`);
   }
 
-  const data = await res.json();
-  console.log("Received data:", data); // 🔥
-  return data;
+  return res.json();
 }
