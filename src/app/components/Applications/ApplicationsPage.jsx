@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import ApplicationsTable from "/components/Applications/ApplicationsTable";
-import { fetchAllApplicants } from "/services/api";
+import ApplicationsFilter from './ApplicationsFilter';
+import ApplicationsTable from './ApplicationsTable';
+import ApplicationsPagination from './ApplicationsPagination';
+import ApplicationModal from './ApplicationsModal';
+import { fetchAllApplicants } from "../services/api";
 
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState([]);
