@@ -9,6 +9,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   // State
   const [personalInfo, setPersonalInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("application");
   const [notes, setNotes] = useState("");
   const [rating, setRating] = useState(0);
