@@ -40,6 +40,21 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB");
   };
 
+  const ScoreCard = ({ label, value }) => (
+    <div className="p-4 border border-gray-200 rounded-xl shadow-sm bg-white">
+      <p className="text-gray-600 text-sm">{label}</p>
+      <div className="mt-2 w-full bg-gray-100 rounded-full h-3">
+        <div
+          className="bg-green-600 h-3 rounded-full transition-all duration-500"
+          style={{ width: `${Math.min(value * 10, 100)}%` }}
+        ></div>
+      </div>
+      <p className="text-right text-gray-700 text-sm mt-1 font-semibold">
+        {value}/10
+      </p>
+    </div>
+  );
+  
   // Fetch personal info
   useEffect(() => {
     if (!application?.id) {
