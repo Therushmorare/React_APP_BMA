@@ -146,7 +146,10 @@ const ApplicationsFilter = ({
             Clear all filters
           </button>
           <div className="text-sm text-gray-600">
-            Showing {((currentPage - 1) * APPLICATIONS_PER_PAGE) + 1} to {Math.min(currentPage * APPLICATIONS_PER_PAGE, totalApplications)} of {totalApplications.toLocaleString()} applications
+            Showing{" "}
+            {((currentPage - 1) * APPLICATIONS_PER_PAGE) + 1} to{" "}
+            {Math.min(currentPage * APPLICATIONS_PER_PAGE, totalApplications || 0)} of{" "}
+            {(totalApplications ?? 0).toLocaleString()} applications
           </div>
         </div>
       </div>

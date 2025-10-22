@@ -1,22 +1,18 @@
-"use client"
+"use client";
 
-import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const ApplicationsPagination = ({ 
-  currentPage, 
-  totalPages, 
-  onPageChange 
-}) => {
-  
-  if (totalPages <= 1) {
+const ApplicationsPagination = ({ currentPage, totalPages, onPageChange }) => {
+  // Prevent rendering if there’s only 1 page or no pages
+  if (!totalPages || totalPages <= 1) {
     return null;
   }
 
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
       <div className="text-sm text-gray-700">
-        Page {currentPage} of {totalPages.toLocaleString()}
+        Page {currentPage} of {(totalPages ?? 0).toLocaleString()}
       </div>
       <div className="flex items-center space-x-2">
         <button
@@ -27,7 +23,7 @@ const ApplicationsPagination = ({
           <ChevronLeft size={16} />
           Previous
         </button>
-        
+
         {/* Page numbers */}
         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
           let pageNum;
@@ -47,15 +43,15 @@ const ApplicationsPagination = ({
               onClick={() => onPageChange(pageNum)}
               className={`px-3 py-1 text-sm border border-gray-300 rounded transition-colors ${
                 currentPage === pageNum
-                  ? 'bg-green-700 text-white border-green-700'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  ? "bg-green-700 text-white border-green-700"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
               }`}
             >
               {pageNum}
             </button>
           );
         })}
-        
+
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
