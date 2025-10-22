@@ -1,10 +1,12 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { FileText, Mail, Phone, X, Star, Send } from 'lucide-react';
+import { fetchPersonalInfo } from "../../services/api";
 
 const ApplicationModal = ({ application, onClose, onAction }) => {
   const isOpen = !!application;
+  const [personalInfo, setPersonalInfo] = useState(null);
   const [activeTab, setActiveTab] = useState('application');
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState(0);
@@ -29,13 +31,26 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
     { value: 'onboarding', label: 'Onboarding Welcome' }
   ];
 
-  // Sample application questions
   const applicationQuestions = [
     { question: "Why are you interested in this position?", answer: application?.coverLetter || "See cover letter below." },
     { question: "What are your salary expectations?", answer: application?.salary || "Not specified" },
     { question: "Years of experience?", answer: `${application?.experienceYears || 0} years` },
     { question: "When can you start?", answer: "2 weeks notice period" }
   ];
+
+  // Fetch personal info when modal opens
+  useEffect(() => {
+    async function loadPersonalInfo() {
+      if (!application?.applicant_id) return;
+      try {
+        const data = await fetchPersonalInfo(application.applicant_id);
+        setPersonalInfo(data);
+      } catch (error) {
+        console.error("Error fetching personal info:", error);
+      }
+    }
+    loadPersonalInfo();
+  }, [application && application.applicant_id]);
 
   useEffect(() => {
     if (application) {
@@ -112,11 +127,11 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
             <div className="text-center">
               <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 mx-auto mb-4">
                 <img
-                  src={application.avatar}
+                  src={application.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(application.candidateName || 'User')}&background=22c55e&color=ffffff&size=128`}
                   alt={application.candidateName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(application.candidateName)}&background=22c55e&color=ffffff&size=128`;
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(application.candidateName || 'User')}&background=22c55e&color=ffffff&size=128`;
                   }}
                 />
               </div>
@@ -141,58 +156,63 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               </div>
 
               {/* Quick Info Card */}
-              <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-600">Department:</span>
-                  <p className="text-gray-900 font-medium">{application.department}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Type:</span>
-                  <p className="text-gray-900 font-medium capitalize">{application.type}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Experience:</span>
-                  <p className="text-gray-900 font-medium">{application.experienceYears} years</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Salary:</span>
-                  <p className="text-gray-900 font-medium">{application.salary}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Source:</span>
-                  <p className="text-gray-900 font-medium">{application.source}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Applied:</span>
-                  <p className="text-gray-900 font-medium">{formatDate(application.appliedDate)}</p>
-                </div>
+              <div className="space-y-4">
+                {personalInfo ? (
+                  <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-gray-600">Name:</span>
+                      <p className="text-gray-900 font-medium">{personalInfo.first_name} {personalInfo.last_name}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Phone:</span>
+                      <p className="text-gray-900 font-medium">{personalInfo.phone_number}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">City:</span>
+                      <p className="text-gray-900 font-medium">{personalInfo.city}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Province:</span>
+                      <p className="text-gray-900 font-medium">{personalInfo.province}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Nationality:</span>
+                      <p className="text-gray-900 font-medium">{personalInfo.nationality}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Date of Birth:</span>
+                      <p className="text-gray-900 font-medium">{formatDate(personalInfo.date_of_birth)}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-600">Address:</span>
+                      <p className="text-gray-900 font-medium">{personalInfo.physical_address}, {personalInfo.postal_code}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-gray-500 text-sm">Loading personal info...</div>
+                )}
               </div>
             </div>
 
-            {/* Toggle Tabs */}
+            {/* Tabs and Tab Content */}
             <div className="border-b border-gray-200">
               <div className="flex space-x-0">
-                {[
-                  { id: 'application', label: 'Application' },
-                  { id: 'evaluation', label: 'Evaluation' },
-                  { id: 'email', label: 'Email' }
-                ].map(tab => (
+                {['application', 'evaluation', 'email'].map(tab => (
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
                     className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                      activeTab === tab.id
+                      activeTab === tab
                         ? 'border-green-700 text-green-700'
                         : 'border-transparent text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    {tab.label}
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Tab Content */}
             <div className="space-y-4">
               {/* Application Tab */}
               {activeTab === 'application' && (
@@ -205,15 +225,13 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                     </div>
                   ))}
 
-                  {/* Skills Section */}
+                  {/* Skills */}
                   {application.skills?.length > 0 && (
                     <div className="space-y-3 mt-6">
                       <h4 className="font-medium text-gray-900">Skills & Technologies</h4>
                       <div className="flex flex-wrap gap-2">
-                        {application.skills.map((skill, index) => (
-                          <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {skill}
-                          </span>
+                        {application.skills.map((skill, idx) => (
+                          <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">{skill}</span>
                         ))}
                       </div>
                     </div>
@@ -245,9 +263,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               {activeTab === 'evaluation' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
@@ -256,26 +272,19 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                       placeholder="Add your evaluation notes here..."
                     />
                   </div>
-                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rating
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
                     <div className="flex space-x-1">
                       {[1, 2, 3, 4, 5].map(star => (
                         <button
                           key={star}
                           onClick={() => setRating(star)}
-                          className={`p-1 transition-colors ${
-                            star <= rating ? 'text-yellow-500' : 'text-gray-300'
-                          }`}
+                          className={`p-1 transition-colors ${star <= rating ? 'text-yellow-500' : 'text-gray-300'}`}
                         >
                           <Star size={20} fill={star <= rating ? 'currentColor' : 'none'} />
                         </button>
                       ))}
-                      <span className="ml-2 text-sm text-gray-600">
-                        {rating > 0 ? `${rating}/5` : 'No rating'}
-                      </span>
+                      <span className="ml-2 text-sm text-gray-600">{rating > 0 ? `${rating}/5` : 'No rating'}</span>
                     </div>
                   </div>
                 </div>
@@ -285,9 +294,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               {activeTab === 'email' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Templates
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Templates</label>
                     <select
                       value={selectedTemplate}
                       onChange={(e) => setSelectedTemplate(e.target.value)}
@@ -295,27 +302,20 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                     >
                       <option value="">Select template...</option>
                       {emailTemplates.map(template => (
-                        <option key={template.value} value={template.value}>
-                          {template.label}
-                        </option>
+                        <option key={template.value} value={template.value}>{template.label}</option>
                       ))}
                     </select>
                   </div>
-                  
                   {selectedTemplate && (
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h5 className="font-medium text-gray-900">
-                          {emailTemplates.find(t => t.value === selectedTemplate)?.label}
-                        </h5>
+                        <h5 className="font-medium text-gray-900">{emailTemplates.find(t => t.value === selectedTemplate)?.label}</h5>
                         <button className="flex items-center space-x-1 px-3 py-1 bg-green-700 text-white rounded text-sm hover:bg-green-800 transition-colors">
                           <Send size={14} />
                           <span>Send</span>
                         </button>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        Template preview will be shown here...
-                      </p>
+                      <p className="text-sm text-gray-600">Template preview will be shown here...</p>
                     </div>
                   )}
                 </div>
@@ -341,32 +341,13 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 ))}
               </div>
             </div>
-
           </div>
 
-          {/* Footer with Action Buttons */}
+          {/* Footer */}
           <div className="p-6 border-t border-gray-200 space-y-3">
-            <button
-              onClick={handleSubmit}
-              className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800
-              transition-colors font-medium"
-            >
-              Save Changes
-            </button>
-
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="w-full bg-red-100 text-red-700 py-3 rounded-lg hover:bg-red-200 transition-colors font-medium"
-            >
-              Delete Application
-            </button>
-
-            <button
-              onClick={() => setShowInterviewSchedule(true)}
-              className="w-full bg-blue-100 text-blue-700 py-3 rounded-lg hover:bg-blue-200 transition-colors font-medium"
-            >
-              Schedule Interview
-            </button>
+            <button onClick={handleSubmit} className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium">Save Changes</button>
+            <button onClick={() => setShowDeleteConfirm(true)} className="w-full bg-red-100 text-red-700 py-3 rounded-lg hover:bg-red-200 transition-colors font-medium">Delete Application</button>
+            <button onClick={() => setShowInterviewSchedule(true)} className="w-full bg-blue-100 text-blue-700 py-3 rounded-lg hover:bg-blue-200 transition-colors font-medium">Schedule Interview</button>
           </div>
         </div>
       </div>
@@ -378,18 +359,8 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Delete</h3>
             <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this application? This action cannot be undone.</p>
             <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteApplication}
-                className="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white text-sm transition-colors"
-              >
-                Delete
-              </button>
+              <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm transition-colors">Cancel</button>
+              <button onClick={handleDeleteApplication} className="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white text-sm transition-colors">Delete</button>
             </div>
           </div>
         </div>
@@ -400,54 +371,26 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-80 space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Schedule Interview</h3>
-            
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Date</label>
-              <input
-                type="date"
-                value={interviewDate}
-                onChange={(e) => setInterviewDate(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-              />
+              <input type="date" value={interviewDate} onChange={(e) => setInterviewDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"/>
             </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Time</label>
-              <input
-                type="time"
-                value={interviewTime}
-                onChange={(e) => setInterviewTime(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-              />
+              <input type="time" value={interviewTime} onChange={(e) => setInterviewTime(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"/>
             </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Type</label>
-              <select
-                value={interviewType}
-                onChange={(e) => setInterviewType(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-              >
-                <option value="">Select type...</option>
+              <select value={interviewType} onChange={(e) => setInterviewType(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100">
+                <option value="">Select Type</option>
                 <option value="onsite">Onsite</option>
-                <option value="online">Online</option>
+                <option value="virtual">Virtual</option>
                 <option value="phone">Phone</option>
               </select>
             </div>
-
-            <div className="flex justify-end space-x-3 mt-4">
-              <button
-                onClick={() => setShowInterviewSchedule(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleScheduleInterview}
-                className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-sm transition-colors"
-              >
-                Schedule
-              </button>
+            <div className="flex justify-end space-x-3">
+              <button onClick={() => setShowInterviewSchedule(false)} className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm transition-colors">Cancel</button>
+              <button onClick={handleScheduleInterview} className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-sm transition-colors">Schedule</button>
             </div>
           </div>
         </div>

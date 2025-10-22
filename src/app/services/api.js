@@ -26,3 +26,20 @@ export async function fetchAllApplicants() {
 
   return res.json();
 }
+
+export async function fetchPersonalInfo(applicantId) {
+  const res = await fetch(
+    `https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/personalInfo/${applicantId}`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch personal info for ${applicantId}`);
+  }
+
+  return res.json();
+}
