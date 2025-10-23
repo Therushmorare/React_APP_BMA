@@ -355,6 +355,17 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         {/* Tab Navigation */}
         <div className="mt-4 flex bg-gray-100 rounded-lg p-1">
           <button
+            onClick={() => setActiveTab('jobFilters')}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'jobFilters'
+                ? 'bg-white text-green-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Job Filters
+          </button>
+
+          <button
             onClick={() => setActiveTab('requirements')}
             className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
               activeTab === 'requirements'
@@ -378,6 +389,83 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       </div>
 
       {/* Content Area */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {activeTab === 'jobFilters' &&(
+          <div className="space-y-6">
+          {/* Job Filters */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Expected Experience <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="number"
+                name="experience"
+                value={formData.experience}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+                placeholder="e.g 5 years"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Preferred Candidate Location <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="text"
+                name="preferredLocation"
+                value={formData.location}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+                placeholder="e.g Midrand"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Preferred Qualification <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="qualification"
+              value={formData.qualification}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+            >
+              <option value="">Select qualification</option>
+              <option value="HighSchool Diploma">HighSchool Diploma</option>
+              <option value="Certificate">Certificate</option>
+              <option value="Diploma">Diploma</option>
+              <option value="Degree">Degree</option>
+              <option value="Masters">Masters</option>
+              <option value="PhD">PhD</option>
+            </select>
+          </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Offering Salary <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="number"
+                name="offeringSalary"
+                value={formData.salary}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+                placeholder="e.g R50 000"
+              />
+            </div>
+          </div>
+
+          </div>
+        )}
+      </div>
+      
       <div className="flex-1 overflow-y-auto p-4">
         {activeTab === 'requirements' && (
           <div className="space-y-6">
