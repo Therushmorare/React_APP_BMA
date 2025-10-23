@@ -30,7 +30,7 @@ export default function MFAPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/hr/hrAuth", {
+      const res = await fetch("https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/hrAuth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ admin_id: userId, token }),
