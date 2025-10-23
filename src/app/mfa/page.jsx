@@ -26,7 +26,10 @@ export default function MFAPage() {
 
   const handleVerify = async (e) => {
     e.preventDefault();
-    if (!userId) return;
+    if (!userId || !token) {
+      setError("Please enter the MFA code");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -37,7 +40,7 @@ export default function MFAPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ admin_id: userId, token }),
+          body: JSON.stringify({ admin_id: userId, token: token }),
         }
       );
 
