@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Save, Eye, Plus, X, GripVertical, Loader2, CheckCircle } from "lucide-react";
 
 const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
@@ -13,27 +13,18 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
   const getAuth = () => {
     const token = typeof window !== "undefined" ? sessionStorage.getItem("access_token") : null;
     const employeeId = typeof window !== "undefined" ? sessionStorage.getItem("employee_id") : null;
-    if (!token || !employeeId) {
-      throw new Error("Missing access_token or employee_id in sessionStorage");
-    }
+    if (!token || !employeeId) throw new Error("Missing access_token or employee_id in sessionStorage");
     return { token, employeeId };
   };
 
   const postJSON = async (url, token, body) => {
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     });
     let data = null;
-    try {
-      data = await res.json();
-    } catch (_) {
-      /* backend might return empty body */
-    }
+    try { data = await res.json(); } catch (_) {}
     if (!res.ok) {
       const msg = (data && (data.message || data.error)) || `Request failed: ${res.status}`;
       throw new Error(msg);
@@ -63,16 +54,15 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         postingDate: existingJob.postingDate || new Date().toISOString().split("T")[0],
         applicationDeadline: existingJob.applicationDeadline || "",
         customQuestions: existingJob.customQuestions || [],
-        // Job Filters tab fields
+        // Job Filters tab fields (API: jobFilters)
         experience: existingJob.experience || "",
         preferredLocation: existingJob.preferredLocation || "",
         qualification: existingJob.qualification || "",
         offeringSalary: existingJob.offeringSalary || "",
-        // Candidate type for expected_candidate
+        // Candidate type (for expected_candidate)
         expectedCandidateType: existingJob.expectedCandidateType || "external",
       };
     }
-
     return {
       title: "",
       department: "",
@@ -92,28 +82,24 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       postingDate: new Date().toISOString().split("T")[0],
       applicationDeadline: "",
       customQuestions: [],
-      // Job Filters tab fields
+      // Job Filters
       experience: "",
       preferredLocation: "",
       qualification: "",
       offeringSalary: "",
-      // Candidate type for expected_candidate
+      // Candidate type
       expectedCandidateType: "external",
     };
   });
 
   const [newSkill, setNewSkill] = useState("");
   const [newPreferredSkill, setNewPreferredSkill] = useState("");
-  const [skillType, setSkillType] = useState("required");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: { ...prev[parent], [child]: value },
-      }));
+      setFormData((prev) => ({ ...prev, [parent]: { ...prev[parent], [child]: value } }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -121,23 +107,15 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
   const addSkill = (type) => {
     const skill = type === "required" ? newSkill : newPreferredSkill;
-    if (skill.trim()) {
-      const skillArray = type === "required" ? "requiredSkills" : "preferredSkills";
-      setFormData((prev) => ({
-        ...prev,
-        [skillArray]: [...prev[skillArray], skill.trim()],
-      }));
-      if (type === "required") setNewSkill("");
-      else setNewPreferredSkill("");
-    }
+    if (!skill.trim()) return;
+    const key = type === "required" ? "requiredSkills" : "preferredSkills";
+    setFormData((prev) => ({ ...prev, [key]: [...prev[key], skill.trim()] }));
+    type === "required" ? setNewSkill("") : setNewPreferredSkill("");
   };
 
   const removeSkill = (index, type) => {
-    const skillArray = type === "required" ? "requiredSkills" : "preferredSkills";
-    setFormData((prev) => ({
-      ...prev,
-      [skillArray]: prev[skillArray].filter((_, i) => i !== index),
-    }));
+    const key = type === "required" ? "requiredSkills" : "preferredSkills";
+    setFormData((prev) => ({ ...prev, [key]: prev[key].filter((_, i) => i !== index) }));
   };
 
   const addCustomQuestion = () => {
@@ -145,13 +123,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       ...prev,
       customQuestions: [
         ...prev.customQuestions,
-        {
-          id: Date.now(),
-          question: "",
-          type: "short-text",
-          required: true,
-          options: [],
-        },
+        { id: Date.now(), question: "", type: "short-text", required: true, options: [] },
       ],
     }));
   };
@@ -164,37 +136,28 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
   };
 
   const removeCustomQuestion = (id) => {
-    setFormData((prev) => ({
-      ...prev,
-      customQuestions: prev.customQuestions.filter((q) => q.id !== id),
-    }));
+    setFormData((prev) => ({ ...prev, customQuestions: prev.customQuestions.filter((q) => q.id !== id) }));
   };
 
-  const addOption = (questionId) => {
+  const addOption = (qid) => {
+    setFormData((prev) => ({
+      ...prev,
+      customQuestions: prev.customQuestions.map((q) => (q.id === qid ? { ...q, options: [...q.options, ""] } : q)),
+    }));
+  };
+  const updateOption = (qid, idx, value) => {
     setFormData((prev) => ({
       ...prev,
       customQuestions: prev.customQuestions.map((q) =>
-        q.id === questionId ? { ...q, options: [...q.options, ""] } : q
+        q.id === qid ? { ...q, options: q.options.map((o, i) => (i === idx ? value : o)) } : q
       ),
     }));
   };
-
-  const updateOption = (questionId, optionIndex, value) => {
+  const removeOption = (qid, idx) => {
     setFormData((prev) => ({
       ...prev,
       customQuestions: prev.customQuestions.map((q) =>
-        q.id === questionId
-          ? { ...q, options: q.options.map((opt, i) => (i === optionIndex ? value : opt)) }
-          : q
-      ),
-    }));
-  };
-
-  const removeOption = (questionId, optionIndex) => {
-    setFormData((prev) => ({
-      ...prev,
-      customQuestions: prev.customQuestions.map((q) =>
-        q.id === questionId ? { ...q, options: q.options.filter((_, i) => i !== optionIndex) } : q
+        q.id === qid ? { ...q, options: q.options.filter((_, i) => i !== idx) } : q
       ),
     }));
   };
@@ -206,13 +169,13 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       const { token, employeeId } = getAuth();
       const eid = employeeId;
 
-      // 1) Build expected_candidate
+      // Build expected_candidate per API
       const expectedTitle = formData.seniorityLevel
         ? `${formData.seniorityLevel} ${formData.title}`.trim()
         : formData.title || "Candidate";
       const expected_candidate = `[${formData.expectedCandidateType === "internal" ? "Internal" : "External"}] ${expectedTitle}`;
 
-      // 2) Build payload for jobPost
+      // jobPost payload
       const duties_list = (formData.responsibilities || "")
         .split(/\r?\n|•/g)
         .map((s) => s.trim())
@@ -238,18 +201,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
       const jobPostRes = await postJSON(`/api/hr/jobPost/${eid}`, token, jobPostPayload);
       const jobId =
-        jobPostRes?.job_id ||
-        jobPostRes?.id ||
-        jobPostRes?.data?.id ||
-        existingJob?.id ||
-        String(Date.now());
+        jobPostRes?.job_id || jobPostRes?.id || jobPostRes?.data?.id || existingJob?.id || String(Date.now());
 
-      // 3) Filters (optional if any provided)
+      // jobFilters payload (send only if something provided)
       const hasAnyFilter =
-        (formData.experience && String(formData.experience).length > 0) ||
+        (formData.experience && `${formData.experience}`.length > 0) ||
         (formData.preferredLocation && formData.preferredLocation.length > 0) ||
         (formData.qualification && formData.qualification.length > 0) ||
-        (formData.offeringSalary && String(formData.offeringSalary).length > 0);
+        (formData.offeringSalary && `${formData.offeringSalary}`.length > 0);
 
       if (hasAnyFilter) {
         const jobFiltersPayload = {
@@ -263,24 +222,23 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         await postJSON(`/api/hr/jobFilters/${eid}/${jobId}`, token, jobFiltersPayload);
       }
 
-      // 4) Questions (loop)
+      // jobQuestion payloads (one per question)
       if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
         await Promise.all(
-          formData.customQuestions.map((q) => {
-            const payload = {
+          formData.customQuestions.map((q) =>
+            postJSON(`/api/hr/jobQuestion/${eid}/${jobId}`, token, {
               employee_id: employeeId,
               job_id: jobId,
               question_type: q.type || "short-text",
               category: "General",
               mandatory_status: q.required ? "required" : "optional",
               question: q.question || "",
-            };
-            return postJSON(`/api/hr/jobQuestion/${eid}/${jobId}`, token, payload);
-          })
+            })
+          )
         );
       }
 
-      // hand back to parent
+      // callback to parent (local)
       const localJob = {
         id: jobId,
         ...formData,
@@ -307,6 +265,22 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     }
   };
 
+  // Gate publish button without changing visuals
+  const canPublish = useMemo(() => {
+    const hasAuth =
+      typeof window === "undefined"
+        ? false
+        : !!sessionStorage.getItem("access_token") && !!sessionStorage.getItem("employee_id");
+    return (
+      hasAuth &&
+      formData.title.trim() &&
+      formData.department.trim() &&
+      formData.type.trim() &&
+      formData.seniorityLevel.trim() &&
+      formData.description.trim()
+    );
+  }, [formData]);
+
   const departmentOptions = [
     "Engineering",
     "Product",
@@ -319,9 +293,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     "Finance",
     "Legal",
   ];
-
   const seniorityOptions = ["Entry Level", "Mid Level", "Senior Level", "Executive Level"];
-
   const questionTypes = [
     { value: "short-text", label: "Short Text" },
     { value: "long-text", label: "Long Text" },
@@ -358,26 +330,12 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{formData.title || "Job Title"}</h1>
               <div className="flex flex-wrap gap-6 text-sm text-gray-600">
-                <span>
-                  <span className="font-medium">Department:</span> {formData.department}
-                </span>
-                <span>
-                  <span className="font-medium">Type:</span> {formData.type}
-                </span>
-                <span>
-                  <span className="font-medium">Level:</span> {formData.seniorityLevel}
-                </span>
-                <span>
-                  <span className="font-medium">Location:</span>{" "}
-                  {formData.locationType === "onsite"
-                    ? formData.city
-                    : formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)}
-                </span>
+                <span><span className="font-medium">Department:</span> {formData.department}</span>
+                <span><span className="font-medium">Type:</span> {formData.type}</span>
+                <span><span className="font-medium">Level:</span> {formData.seniorityLevel}</span>
+                <span><span className="font-medium">Location:</span> {formData.locationType === "onsite" ? formData.city : formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)}</span>
                 {formData.salaryRange.min && (
-                  <span>
-                    <span className="font-medium">Salary:</span> {formData.salaryRange.currency}{" "}
-                    {formData.salaryRange.min} - {formData.salaryRange.max}
-                  </span>
+                  <span><span className="font-medium">Salary:</span> {formData.salaryRange.currency} {formData.salaryRange.min} - {formData.salaryRange.max}</span>
                 )}
               </div>
             </div>
@@ -472,7 +430,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     );
   }
 
-  // ------------------ Main UI (layout kept) ------------------
+  // ------------------ Main UI (layout preserved) ------------------
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Success Alert - Fixed Position */}
@@ -481,9 +439,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
           <CheckCircle size={20} className="text-green-600 mr-3" />
           <div>
             <h4 className="text-sm font-medium text-green-800">Job Post Submitted Successfully!</h4>
-            <p className="text-sm text-green-700 mt-1">
-              Your job posting has been submitted for approval and will be reviewed shortly.
-            </p>
+            <p className="text-sm text-green-700 mt-1">Your job posting has been submitted for approval and will be reviewed shortly.</p>
           </div>
         </div>
       )}
@@ -492,31 +448,9 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       <div className={`border-b border-gray-200 p-4 ${showSuccess ? "mt-16" : ""}`}>
         {/* Tab Navigation */}
         <div className="mt-4 flex bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab("jobFilters")}
-            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-              activeTab === "jobFilters" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Job Filters
-          </button>
-
-          <button
-            onClick={() => setActiveTab("requirements")}
-            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-              activeTab === "requirements" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Job Requirements
-          </button>
-          <button
-            onClick={() => setActiveTab("questions")}
-            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-              activeTab === "questions" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Application Questions
-          </button>
+          <button onClick={() => setActiveTab("jobFilters")} className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${activeTab === "jobFilters" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Job Filters</button>
+          <button onClick={() => setActiveTab("requirements")} className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${activeTab === "requirements" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Job Requirements</button>
+          <button onClick={() => setActiveTab("questions")} className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${activeTab === "questions" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Application Questions</button>
         </div>
       </div>
 
@@ -548,7 +482,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 <input
                   type="text"
                   name="preferredLocation"
-                  value={formData.preferredLocation}
+                  value={formData.preferredLocation} // fixed
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
@@ -586,7 +520,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 <input
                   type="number"
                   name="offeringSalary"
-                  value={formData.offeringSalary}
+                  value={formData.offeringSalary} // fixed
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
@@ -629,10 +563,8 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                   >
                     <option value="">Select Department</option>
-                    {departmentOptions.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
+                    {["Engineering","Product","Design","Analytics","Marketing","Sales","HR","Operations","Finance","Legal"].map((dept) => (
+                      <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
                 </div>
@@ -648,17 +580,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                   >
-                    <option value="">Select Level</option>
-                    {seniorityOptions.map((level) => (
-                      <option key={level} value={level}>
-                        {level}
-                      </option>
+                    {["","Entry Level","Mid Level","Senior Level","Executive Level"].map((level) => (
+                      <option key={level} value={level}>{level || "Select Level"}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* Candidate Type (Internal/External) */}
+              {/* Candidate Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Candidate Type <span className="text-red-500">*</span>
@@ -680,21 +609,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500">
-                  Used to mark whether this hire is intended for internal movement or external recruitment.
+                  Encoded into <code>expected_candidate</code> for the API.
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employment Type <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="type"
-                    value={formData.type}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                  >
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type <span className="text-red-500">*</span></label>
+                  <select name="type" value={formData.type} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100">
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
                     <option value="Contract">Contract</option>
@@ -704,12 +626,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                  >
+                  <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100">
                     <option value="draft">Draft</option>
                     <option value="closed">Closed</option>
                     <option value="archived">Archived</option>
@@ -750,36 +667,15 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 )}
               </div>
 
-              {/* Salary Range (UI only, not sent) */}
+              {/* Salary Range (UI only) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Salary Range (Optional)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  <select
-                    name="salaryRange.currency"
-                    value={formData.salaryRange.currency}
-                    onChange={handleChange}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                  >
-                    <option value="ZAR">ZAR</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
+                  <select name="salaryRange.currency" value={formData.salaryRange.currency} onChange={handleChange} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100">
+                    <option value="ZAR">ZAR</option><option value="USD">USD</option><option value="EUR">EUR</option>
                   </select>
-                  <input
-                    type="number"
-                    name="salaryRange.min"
-                    value={formData.salaryRange.min}
-                    onChange={handleChange}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                    placeholder="Min"
-                  />
-                  <input
-                    type="number"
-                    name="salaryRange.max"
-                    value={formData.salaryRange.max}
-                    onChange={handleChange}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                    placeholder="Max"
-                  />
+                  <input type="number" name="salaryRange.min" value={formData.salaryRange.min} onChange={handleChange} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100" placeholder="Min" />
+                  <input type="number" name="salaryRange.max" value={formData.salaryRange.max} onChange={handleChange} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100" placeholder="Max" />
                 </div>
               </div>
 
@@ -787,24 +683,11 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Posting Date</label>
-                  <input
-                    type="date"
-                    name="postingDate"
-                    value={formData.postingDate}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                  />
+                  <input type="date" name="postingDate" value={formData.postingDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100" />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Application Deadline</label>
-                  <input
-                    type="date"
-                    name="applicationDeadline"
-                    value={formData.applicationDeadline}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                  />
+                  <input type="date" name="applicationDeadline" value={formData.applicationDeadline} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100" />
                 </div>
               </div>
 
@@ -849,26 +732,15 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                     placeholder="Add a required skill"
                     onKeyPress={(e) => e.key === "Enter" && addSkill("required")}
                   />
-                  <button
-                    type="button"
-                    onClick={() => addSkill("required")}
-                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                  >
+                  <button type="button" onClick={() => addSkill("required")} className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
                     <Plus size={14} />
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {formData.requiredSkills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm flex items-center"
-                    >
+                    <span key={index} className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm flex items-center">
                       {skill}
-                      <button
-                        type="button"
-                        onClick={() => removeSkill(index, "required")}
-                        className="ml-2 text-red-600 hover:text-red-800"
-                      >
+                      <button type="button" onClick={() => removeSkill(index, "required")} className="ml-2 text-red-600 hover:text-red-800">
                         <X size={12} />
                       </button>
                     </span>
@@ -888,26 +760,15 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                     placeholder="Add a preferred skill"
                     onKeyPress={(e) => e.key === "Enter" && addSkill("preferred")}
                   />
-                  <button
-                    type="button"
-                    onClick={() => addSkill("preferred")}
-                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                  >
+                  <button type="button" onClick={() => addSkill("preferred")} className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
                     <Plus size={14} />
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {formData.preferredSkills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center"
-                    >
+                    <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
                       {skill}
-                      <button
-                        type="button"
-                        onClick={() => removeSkill(index, "preferred")}
-                        className="ml-2 text-blue-600 hover:text-blue-800"
-                      >
+                      <button type="button" onClick={() => removeSkill(index, "preferred")} className="ml-2 text-blue-600 hover:text-blue-800">
                         <X size={12} />
                       </button>
                     </span>
@@ -915,32 +776,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 </div>
               </div>
 
-              {/* Education & Experience */}
+              {/* Education & Benefits (UI only right now) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Education & Experience Requirements
-                </label>
-                <textarea
-                  name="education"
-                  value={formData.education}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                  placeholder="• Bachelor's degree in Computer Science or related field&#10;• 5+ years of software development experience&#10;• Strong problem-solving and analytical skills"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Education & Experience Requirements</label>
+                <textarea name="education" value={formData.education} onChange={handleChange} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100" placeholder="• Bachelor's degree in ...&#10;• 5+ years of ..." />
               </div>
-
-              {/* Benefits */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Benefits & Perks</label>
-                <textarea
-                  name="benefits"
-                  value={formData.benefits}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                  placeholder="• Medical aid contribution&#10;• Flexible working hours&#10;• Professional development budget&#10;• Performance bonus"
-                />
+                <textarea name="benefits" value={formData.benefits} onChange={handleChange} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100" placeholder="• Medical aid ...&#10;• Flexible hours ..." />
               </div>
             </div>
           </div>
@@ -951,15 +794,9 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-medium text-gray-900">Custom Application Questions</h3>
-                <p className="text-sm text-gray-600">
-                  Add custom questions to gather specific information from applicants
-                </p>
+                <p className="text-sm text-gray-600">Add custom questions to gather specific information from applicants</p>
               </div>
-              <button
-                type="button"
-                onClick={addCustomQuestion}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center"
-              >
+              <button type="button" onClick={addCustomQuestion} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center">
                 <Plus size={14} className="mr-1" />
                 Add Question
               </button>
@@ -973,11 +810,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                       <GripVertical size={16} className="text-gray-400 mr-2" />
                       <span className="text-sm font-medium text-gray-700">Question {index + 1}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeCustomQuestion(question.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
+                    <button type="button" onClick={() => removeCustomQuestion(question.id)} className="text-red-600 hover:text-red-800">
                       <X size={16} />
                     </button>
                   </div>
@@ -1003,9 +836,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                         >
                           {questionTypes.map((type) => (
-                            <option key={type.value} value={type.value}>
-                              {type.label}
-                            </option>
+                            <option key={type.value} value={type.value}>{type.label}</option>
                           ))}
                         </select>
                       </div>
@@ -1027,11 +858,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                       <div>
                         <div className="flex justify-between items-center mb-2">
                           <label className="block text-sm font-medium text-gray-700">Answer Options</label>
-                          <button
-                            type="button"
-                            onClick={() => addOption(question.id)}
-                            className="text-sm text-green-600 hover:text-green-800"
-                          >
+                          <button type="button" onClick={() => addOption(question.id)} className="text-sm text-green-600 hover:text-green-800">
                             Add Option
                           </button>
                         </div>
@@ -1045,11 +872,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                                 placeholder={`Option ${optionIndex + 1}`}
                               />
-                              <button
-                                type="button"
-                                onClick={() => removeOption(question.id, optionIndex)}
-                                className="text-red-600 hover:text-red-800"
-                              >
+                              <button type="button" onClick={() => removeOption(question.id, optionIndex)} className="text-red-600 hover:text-red-800">
                                 <X size={16} />
                               </button>
                             </div>
@@ -1064,11 +887,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
               {formData.customQuestions.length === 0 && (
                 <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                   <p className="text-gray-600 mb-4">No custom questions added yet</p>
-                  <button
-                    type="button"
-                    onClick={addCustomQuestion}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center mx-auto"
-                  >
+                  <button type="button" onClick={addCustomQuestion} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center mx-auto">
                     <Plus size={14} className="mr-1" />
                     Add Your First Question
                   </button>
@@ -1082,20 +901,12 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       {/* Fixed Footer Actions */}
       <div className="border-t border-gray-200 p-4 bg-white">
         <div className="flex justify-between items-center">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
             Cancel
           </button>
 
           <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={() => setIsPreview(true)}
-              className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center"
-            >
+            <button type="button" onClick={() => setIsPreview(true)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center">
               <Eye size={14} className="mr-1" />
               Preview
             </button>
@@ -1111,8 +922,9 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
             <button
               type="button"
               onClick={() => handleSubmit(true)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !canPublish}
               className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!canPublish ? "Fill required fields and ensure session has access_token + employee_id" : undefined}
             >
               {isSubmitting ? (
                 <>
