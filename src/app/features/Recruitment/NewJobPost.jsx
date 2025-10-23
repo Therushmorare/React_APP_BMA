@@ -285,7 +285,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 job_id: jobId,
                 question_type: q.type || "short-text",
                 category: "General",
-                mandatory_status: q.required ? "required" : "optional",
+                mandatory_status: q.required ? "Yes" : "No",
                 question: q.question || "",
               }
             )
@@ -1016,8 +1016,8 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                           onChange={(e) => updateCustomQuestion(question.id, "required", e.target.value === "true")}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                         >
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
                         </select>
                       </div>
                     </div>
