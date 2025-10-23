@@ -40,7 +40,7 @@ export default function MFAPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ admin_id: userId, token: token }),
+          body: JSON.stringify({ employee_id: userId, token: token }),
         }
       );
 
