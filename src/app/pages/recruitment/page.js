@@ -1,5 +1,10 @@
 import JobPosts from "@/app/components/Recruitment/RecruitmentPage";
+import SessionManager from "@/app/components/SessionManager";
 
 export default function Recruitment() {
-  return <JobPosts />;
+  return (
+    <SessionManager>
+      <JobPosts />
+    </SessionManager>
+  );
 }

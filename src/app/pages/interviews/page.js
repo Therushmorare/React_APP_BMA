@@ -1,5 +1,10 @@
 import Interviews from "@/app/components/Interviews/InterviewsPage";
+import SessionManager from "@/app/components/SessionManager";
 
 export default function Employees() {
-  return <Interviews />;
+  return (
+    <SessionManager>
+      <Interviews />
+    </SessionManager>
+  );
 }

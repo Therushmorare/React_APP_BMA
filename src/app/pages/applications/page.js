@@ -1,5 +1,12 @@
+"use client";
+
 import ApplicationsPage from "@/app/components/Applications/ApplicationsPage";
+import SessionManager from "@/app/components/SessionManager";
 
 export default function Applications() {
-  return <ApplicationsPage />;
+  return (
+    <SessionManager>
+      <ApplicationsPage />
+    </SessionManager>
+  );
 }
