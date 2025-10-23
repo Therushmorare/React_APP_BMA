@@ -51,7 +51,7 @@ export default function MFAPage() {
       }
 
       sessionStorage.setItem("employee_email", data.email);
-      router.push("/applications");
+      router.push("/pages/applications");
     } catch (err) {
       setError(err.message);
     } finally {
