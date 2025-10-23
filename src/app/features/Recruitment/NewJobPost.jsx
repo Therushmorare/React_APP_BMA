@@ -12,7 +12,11 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
   // ------------------ helpers: auth + json fetch ------------------
   const getAuth = () => {
     const token = typeof window !== "undefined" ? sessionStorage.getItem("access_token") : null;
-    const employeeId = typeof window !== "undefined" ? sessionStorage.getItem("user_id") : null;
+    // prefer employee_id, fall back to user_id for compatibility
+    const employeeId =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("employee_id") || sessionStorage.getItem("user_id")
+        : null;
     if (!token || !employeeId) throw new Error("Missing access_token or employee_id in sessionStorage");
     return { token, employeeId };
   };
@@ -24,13 +28,27 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       body: JSON.stringify(body),
     });
     let data = null;
-    try { data = await res.json(); } catch (_) {}
+    // handle non-JSON/empty bodies safely
+    const text = await res.text().catch(() => "");
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text };
+      }
+    }
     if (!res.ok) {
-      const msg = (data && (data.message || data.error)) || `Request failed: ${res.status}`;
+      const msg = (data && (data.message || data.error || data.detail)) || `Request failed: ${res.status}`;
       throw new Error(msg);
     }
     return data || {};
   };
+
+  const splitToList = (text) =>
+    (text || "")
+      .split(/\r?\n|•|-/g)
+      .map((s) => s.replace(/^[\s•-]+/, "").trim())
+      .filter(Boolean);
 
   // ------------------ form state ------------------
   const [formData, setFormData] = useState(() => {
@@ -61,6 +79,8 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         offeringSalary: existingJob.offeringSalary || "",
         // Candidate type (for expected_candidate)
         expectedCandidateType: existingJob.expectedCandidateType || "external",
+        // Required docs (UI -> API documents_required_list)
+        documentsRequired: existingJob.documentsRequired || [],
       };
     }
     return {
@@ -89,11 +109,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       offeringSalary: "",
       // Candidate type
       expectedCandidateType: "external",
+      // Required docs
+      documentsRequired: [],
     };
   });
 
   const [newSkill, setNewSkill] = useState("");
   const [newPreferredSkill, setNewPreferredSkill] = useState("");
+  const [newDocument, setNewDocument] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -162,6 +185,25 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     }));
   };
 
+  // ---- Required Documents helpers ----
+  const addDocument = () => {
+    const doc = (newDocument || "").trim();
+    if (!doc) return;
+    setFormData((prev) => {
+      const list = prev.documentsRequired || [];
+      if (list.includes(doc)) return prev; // no duplicates
+      return { ...prev, documentsRequired: [...list, doc] };
+    });
+    setNewDocument("");
+  };
+
+  const removeDocument = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      documentsRequired: (prev.documentsRequired || []).filter((_, i) => i !== index),
+    }));
+  };
+
   // ------------------ API submit flow ------------------
   const handleSubmit = async (publishNow = false) => {
     setIsSubmitting(true);
@@ -176,10 +218,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       const expected_candidate = `[${formData.expectedCandidateType === "internal" ? "Internal" : "External"}] ${expectedTitle}`;
 
       // jobPost payload
-      const duties_list = (formData.responsibilities || "")
-        .split(/\r?\n|•/g)
-        .map((s) => s.trim())
-        .filter(Boolean);
+      const duties_list = splitToList(formData.responsibilities || "");
 
       const jobPostPayload = {
         employee_id: employeeId,
@@ -189,17 +228,21 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         department: formData.department || "",
         office:
           formData.locationType === "onsite"
-            ? formData.city || ""
+            ? [formData.city, "Onsite"].filter(Boolean).join(", ")
             : formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1),
         required_applicants_number: 1,
         closing_date: formData.applicationDeadline || "",
         description: formData.description || "",
         requirements_list: (formData.requiredSkills || []).map(String),
         duties_list,
-        documents_required_list: [],
+        documents_required_list: (formData.documentsRequired || []).map(String),
       };
 
-      const jobPostRes = await postJSON(`https://jellyfish-app-z83s2.ondigitalocean.app//api/hr/jobPost/${eid}`, token, jobPostPayload);
+      const jobPostRes = await postJSON(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
+        token,
+        jobPostPayload
+      );
       const jobId =
         jobPostRes?.job_id || jobPostRes?.id || jobPostRes?.data?.id || existingJob?.id || String(Date.now());
 
@@ -219,21 +262,33 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
           prefered_qualification: formData.qualification || "",
           offered_salary: Number(formData.offeringSalary || 0),
         };
-        await postJSON(`https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${eid}/${jobId}`, token, jobFiltersPayload);
+        await postJSON(
+          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(eid)}/${encodeURIComponent(
+            jobId
+          )}`,
+          token,
+          jobFiltersPayload
+        );
       }
 
       // jobQuestion payloads (one per question)
       if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
         await Promise.all(
           formData.customQuestions.map((q) =>
-            postJSON(`https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobQuestion/${eid}/${jobId}`, token, {
-              employee_id: employeeId,
-              job_id: jobId,
-              question_type: q.type || "short-text",
-              category: "General",
-              mandatory_status: q.required ? "required" : "optional",
-              question: q.question || "",
-            })
+            postJSON(
+              `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobQuestion/${encodeURIComponent(
+                eid
+              )}/${encodeURIComponent(jobId)}`,
+              token,
+              {
+                employee_id: employeeId,
+                job_id: jobId,
+                question_type: q.type || "short-text",
+                category: "General",
+                mandatory_status: q.required ? "required" : "optional",
+                question: q.question || "",
+              }
+            )
           )
         );
       }
@@ -270,7 +325,8 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     const hasAuth =
       typeof window === "undefined"
         ? false
-        : !!sessionStorage.getItem("access_token") && !!sessionStorage.getItem("employee_id");
+        : !!sessionStorage.getItem("access_token") &&
+          !!(sessionStorage.getItem("employee_id") || sessionStorage.getItem("user_id"));
     return (
       hasAuth &&
       formData.title.trim() &&
@@ -302,7 +358,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     { value: "file-upload", label: "File Upload" },
   ];
 
-  // ------------------ Preview (unchanged) ------------------
+  // ------------------ Preview ------------------
   if (isPreview) {
     return (
       <div className="h-full overflow-y-auto bg-gray-50">
@@ -317,10 +373,21 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
             </button>
             <button
               onClick={() => handleSubmit(true)}
-              className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center"
+              disabled={!canPublish || isSubmitting}
+              title={!canPublish ? "Fill required fields and ensure session has access_token + employee_id" : undefined}
+              className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save size={14} className="mr-1" />
-              Publish Job
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={14} className="mr-1 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Save size={14} className="mr-1" />
+                  Publish Job
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -330,12 +397,26 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{formData.title || "Job Title"}</h1>
               <div className="flex flex-wrap gap-6 text-sm text-gray-600">
-                <span><span className="font-medium">Department:</span> {formData.department}</span>
-                <span><span className="font-medium">Type:</span> {formData.type}</span>
-                <span><span className="font-medium">Level:</span> {formData.seniorityLevel}</span>
-                <span><span className="font-medium">Location:</span> {formData.locationType === "onsite" ? formData.city : formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)}</span>
+                <span>
+                  <span className="font-medium">Department:</span> {formData.department}
+                </span>
+                <span>
+                  <span className="font-medium">Type:</span> {formData.type}
+                </span>
+                <span>
+                  <span className="font-medium">Level:</span> {formData.seniorityLevel}
+                </span>
+                <span>
+                  <span className="font-medium">Location:</span>{" "}
+                  {formData.locationType === "onsite"
+                    ? [formData.city, "Onsite"].filter(Boolean).join(", ")
+                    : formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)}
+                </span>
                 {formData.salaryRange.min && (
-                  <span><span className="font-medium">Salary:</span> {formData.salaryRange.currency} {formData.salaryRange.min} - {formData.salaryRange.max}</span>
+                  <span>
+                    <span className="font-medium">Salary:</span> {formData.salaryRange.currency}{" "}
+                    {formData.salaryRange.min} - {formData.salaryRange.max}
+                  </span>
                 )}
               </div>
             </div>
@@ -351,7 +432,9 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
               {formData.responsibilities && (
                 <section>
                   <h2 className="text-xl font-semibold mb-3">Key Responsibilities</h2>
-                  <div className="text-gray-700 whitespace-pre-line leading-relaxed">{formData.responsibilities}</div>
+                  <div className="text-gray-700 whitespace-pre-line leading-relaxed">
+                    {formData.responsibilities}
+                  </div>
                 </section>
               )}
 
@@ -439,7 +522,9 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
           <CheckCircle size={20} className="text-green-600 mr-3" />
           <div>
             <h4 className="text-sm font-medium text-green-800">Job Post Submitted Successfully!</h4>
-            <p className="text-sm text-green-700 mt-1">Your job posting has been submitted for approval and will be reviewed shortly.</p>
+            <p className="text-sm text-green-700 mt-1">
+              Your job posting has been submitted for approval and will be reviewed shortly.
+            </p>
           </div>
         </div>
       )}
@@ -448,9 +533,30 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       <div className={`border-b border-gray-200 p-4 ${showSuccess ? "mt-16" : ""}`}>
         {/* Tab Navigation */}
         <div className="mt-4 flex bg-gray-100 rounded-lg p-1">
-          <button onClick={() => setActiveTab("jobFilters")} className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${activeTab === "jobFilters" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Job Filters</button>
-          <button onClick={() => setActiveTab("requirements")} className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${activeTab === "requirements" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Job Requirements</button>
-          <button onClick={() => setActiveTab("questions")} className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${activeTab === "questions" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"}`}>Application Questions</button>
+          <button
+            onClick={() => setActiveTab("jobFilters")}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+              activeTab === "jobFilters" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Job Filters
+          </button>
+          <button
+            onClick={() => setActiveTab("requirements")}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+              activeTab === "requirements" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Job Requirements
+          </button>
+          <button
+            onClick={() => setActiveTab("questions")}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+              activeTab === "questions" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Application Questions
+          </button>
         </div>
       </div>
 
@@ -482,7 +588,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 <input
                   type="text"
                   name="preferredLocation"
-                  value={formData.preferredLocation} // fixed
+                  value={formData.preferredLocation}
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
@@ -520,7 +626,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 <input
                   type="number"
                   name="offeringSalary"
-                  value={formData.offeringSalary} // fixed
+                  value={formData.offeringSalary}
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
@@ -785,6 +891,68 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Benefits & Perks</label>
                 <textarea name="benefits" value={formData.benefits} onChange={handleChange} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100" placeholder="• Medical aid ...&#10;• Flexible hours ..." />
               </div>
+
+              {/* Required Documents */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Required Documents
+                </label>
+
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newDocument}
+                    onChange={(e) => setNewDocument(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addDocument())}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+                    placeholder='e.g. "ID Copy", "CV", "Qualifications", "Portfolio PDF"'
+                  />
+                  <button
+                    type="button"
+                    onClick={addDocument}
+                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    aria-label="Add required document"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {["ID Copy", "CV/Resume", "Cover Letter", "Qualifications", "References", "Portfolio PDF"].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        setNewDocument(s);
+                        addDocument();
+                      }}
+                      className="text-xs px-2 py-1 border border-gray-300 rounded-full hover:bg-gray-50"
+                      title={`Add "${s}"`}
+                    >
+                      + {s}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {(formData.documentsRequired || []).map((doc, index) => (
+                    <span
+                      key={`${doc}-${index}`}
+                      className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center"
+                    >
+                      {doc}
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(index)}
+                        className="ml-2 text-purple-700 hover:text-purple-900"
+                        aria-label={`Remove ${doc}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -916,12 +1084,22 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
               disabled={isSubmitting}
               className="px-4 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save size={14} className="mr-1" />
-              Save Draft
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={14} className="mr-1 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={14} className="mr-1" />
+                  Save Draft
+                </>
+              )}
             </button>
             <button
               type="button"
               onClick={() => handleSubmit(true)}
+              disabled={!canPublish || isSubmitting}
               className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
               title={!canPublish ? "Fill required fields and ensure session has access_token + employee_id" : undefined}
             >
