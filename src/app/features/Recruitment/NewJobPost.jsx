@@ -464,9 +464,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
           </div>
         )}
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-4">
+
         {activeTab === 'requirements' && (
           <div className="space-y-6">
             {/* Basic Information */}
