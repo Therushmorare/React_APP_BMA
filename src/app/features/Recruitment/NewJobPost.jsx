@@ -12,7 +12,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
   // ------------------ helpers: auth + json fetch ------------------
   const getAuth = () => {
     const token = typeof window !== "undefined" ? sessionStorage.getItem("access_token") : null;
-    const employeeId = typeof window !== "undefined" ? sessionStorage.getItem("employee_id") : null;
+    const employeeId = typeof window !== "undefined" ? sessionStorage.getItem("user_id") : null;
     if (!token || !employeeId) throw new Error("Missing access_token or employee_id in sessionStorage");
     return { token, employeeId };
   };
@@ -199,7 +199,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         documents_required_list: [],
       };
 
-      const jobPostRes = await postJSON(`/api/hr/jobPost/${eid}`, token, jobPostPayload);
+      const jobPostRes = await postJSON(`https://jellyfish-app-z83s2.ondigitalocean.app//api/hr/jobPost/${eid}`, token, jobPostPayload);
       const jobId =
         jobPostRes?.job_id || jobPostRes?.id || jobPostRes?.data?.id || existingJob?.id || String(Date.now());
 
@@ -219,14 +219,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
           prefered_qualification: formData.qualification || "",
           offered_salary: Number(formData.offeringSalary || 0),
         };
-        await postJSON(`/api/hr/jobFilters/${eid}/${jobId}`, token, jobFiltersPayload);
+        await postJSON(`https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${eid}/${jobId}`, token, jobFiltersPayload);
       }
 
       // jobQuestion payloads (one per question)
       if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
         await Promise.all(
           formData.customQuestions.map((q) =>
-            postJSON(`/api/hr/jobQuestion/${eid}/${jobId}`, token, {
+            postJSON(`https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobQuestion/${eid}/${jobId}`, token, {
               employee_id: employeeId,
               job_id: jobId,
               question_type: q.type || "short-text",
