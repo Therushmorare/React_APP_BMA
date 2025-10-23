@@ -9,9 +9,38 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // ---------- helpers: auth + fetch ----------
+  const getAuth = () => {
+    const token = typeof window !== "undefined" ? sessionStorage.getItem('access_token') : null;
+    const employeeId = typeof window !== "undefined" ? sessionStorage.getItem('employee_id') : null;
+    if (!token || !employeeId) {
+      throw new Error('Missing access_token or employee_id in sessionStorage');
+    }
+    return { token, employeeId };
+  };
+
+  const postJSON = async (url, token, body) => {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    });
+    // Some backends return 200/201 with no JSON; be defensive
+    let data = null;
+    try { data = await res.json(); } catch (_) { /* ignore */ }
+    if (!res.ok) {
+      const msg = (data && (data.message || data.error)) || `Request failed: ${res.status}`;
+      throw new Error(msg);
+    }
+    return data || {};
+  };
+
+  // ---------- form state (unchanged UI; added fields for Filters tab) ----------
   const [formData, setFormData] = useState(() => {
     if (existingJob) {
-      // Pre-fill form with existing job data
       return {
         title: existingJob.title || '',
         department: existingJob.department || '',
@@ -30,11 +59,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         benefits: existingJob.benefits || '',
         postingDate: existingJob.postingDate || new Date().toISOString().split('T')[0],
         applicationDeadline: existingJob.applicationDeadline || '',
-        customQuestions: existingJob.customQuestions || []
+        customQuestions: existingJob.customQuestions || [],
+        // Job Filters tab fields
+        experience: existingJob.experience || '',
+        preferredLocation: existingJob.preferredLocation || '',
+        qualification: existingJob.qualification || '',
+        offeringSalary: existingJob.offeringSalary || ''
       };
     }
-    
-    //form data for new jobs
     return {
       title: '',
       department: '',
@@ -53,7 +85,12 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       benefits: '',
       postingDate: new Date().toISOString().split('T')[0],
       applicationDeadline: '',
-      customQuestions: []
+      customQuestions: [],
+      // Job Filters tab fields
+      experience: '',
+      preferredLocation: '',
+      qualification: '',
+      offeringSalary: ''
     };
   });
 
@@ -82,11 +119,8 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         ...prev,
         [skillArray]: [...prev[skillArray], skill.trim()]
       }));
-      if (type === 'required') {
-        setNewSkill('');
-      } else {
-        setNewPreferredSkill('');
-      }
+      if (type === 'required') setNewSkill('');
+      else setNewPreferredSkill('');
     }
   };
 
@@ -160,34 +194,113 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     }));
   };
 
+  // ---------- API wiring on submit ----------
   const handleSubmit = async (publishNow = false) => {
     setIsSubmitting(true);
+    try {
+      const { token, employeeId } = getAuth();
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const jobData = {
-      id: existingJob ? existingJob.id : Date.now(),
-      ...formData,
-      status: publishNow ? 'Paused' : 'Draft',
-      applicants: existingJob ? existingJob.applicants : 0,
-      createdAt: existingJob ? existingJob.createdAt : new Date().toISOString().split('T')[0]
-    };
+      // 1) Create / Update Job Post
+      // NOTE: API schema for jobPost doesn’t include status; we still keep your local status.
+      const eid = employeeId; // using employee_id as {eid} path param as per spec
+      const expected_candidate = formData.seniorityLevel
+        ? `${formData.seniorityLevel} ${formData.title}`.trim()
+        : formData.title || 'Candidate';
 
-    if (onSave) {
-      onSave(jobData);
-    }
-    
-    console.log(existingJob ? 'Job updated:' : 'New job created:', jobData);
-    setIsSubmitting(false);
-    
-    if (publishNow) {
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
+      // map responsibilities textarea into list (split by newlines or bullets)
+      const duties_list = (formData.responsibilities || '')
+        .split(/\r?\n|•/g)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const requirements_list = (formData.requiredSkills || []).map(String);
+      // documents_required_list not captured in UI; send empty array
+      const documents_required_list = [];
+
+      const jobPostPayload = {
+        employee_id: employeeId,
+        expected_candidate,
+        job_title: formData.title || '',
+        employment_type: formData.type || '',
+        department: formData.department || '',
+        office: formData.locationType === 'onsite' ? (formData.city || '') :
+                formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1),
+        required_applicants_number: 1,
+        closing_date: formData.applicationDeadline || '',
+        description: formData.description || '',
+        requirements_list,
+        duties_list,
+        documents_required_list
+      };
+
+      const jobPostRes = await postJSON(`/api/hr/jobPost/${eid}`, token, jobPostPayload);
+      const jobId = (jobPostRes && (jobPostRes.job_id || jobPostRes.id || jobPostRes.data?.id))
+        || (existingJob && existingJob.id)
+        || String(Date.now()); // final fallback to keep flow moving
+
+      // 2) Add Job Filters (experience, preferred location, qualification, salary)
+      // Guard: only send if at least one filter field has value
+      const hasAnyFilter =
+        (formData.experience && String(formData.experience).length > 0) ||
+        (formData.preferredLocation && formData.preferredLocation.length > 0) ||
+        (formData.qualification && formData.qualification.length > 0) ||
+        (formData.offeringSalary && String(formData.offeringSalary).length > 0);
+
+      if (hasAnyFilter) {
+        const jobFiltersPayload = {
+          employee_id: employeeId,
+          job_id: jobId,
+          required_experience_years: Number(formData.experience || 0),
+          prefered_candidate_location: formData.preferredLocation || '',
+          prefered_qualification: formData.qualification || '',
+          offered_salary: Number(formData.offeringSalary || 0)
+        };
+        await postJSON(`/api/hr/jobFilters/${eid}/${jobId}`, token, jobFiltersPayload);
+      }
+
+      // 3) Add Job Questions (loop each custom question)
+      // API expects: question_type, category, mandatory_status, question
+      if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
+        const questionCalls = formData.customQuestions.map((q) => {
+          const payload = {
+            employee_id: employeeId,
+            job_id: jobId,
+            question_type: q.type || 'short-text',
+            category: 'General', // no category in UI; default to General
+            mandatory_status: q.required ? 'required' : 'optional',
+            question: q.question || ''
+          };
+          return postJSON(`/api/hr/jobQuestion/${eid}/${jobId}`, token, payload);
+        });
+        await Promise.all(questionCalls);
+      }
+
+      // Compose local job data for parent handler
+      const jobData = {
+        id: jobId,
+        ...formData,
+        status: publishNow ? 'Paused' : 'Draft',
+        applicants: existingJob ? existingJob.applicants : 0,
+        createdAt: existingJob ? existingJob.createdAt : new Date().toISOString().split('T')[0]
+      };
+
+      if (onSave) onSave(jobData);
+
+      if (publishNow) {
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          onClose();
+        }, 3000);
+      } else {
         onClose();
-      }, 3000);
-    } else {
-      onClose();
+      }
+    } catch (err) {
+      console.error(err);
+      // keep UI the same; minimal interruption:
+      alert(`Could not submit job. ${err?.message || 'Please try again.'}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -208,6 +321,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     { value: 'file-upload', label: 'File Upload' }
   ];
 
+  // ------------------ UI (unchanged layout & styling) ------------------
   if (isPreview) {
     return (
       <div className="h-full overflow-y-auto bg-gray-50">
@@ -416,7 +530,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
               <input 
                 type="text"
                 name="preferredLocation"
-                value={formData.location}
+                value={formData.preferredLocation}
                 onChange={handleChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
@@ -453,7 +567,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
               <input 
                 type="number"
                 name="offeringSalary"
-                value={formData.salary}
+                value={formData.offeringSalary}
                 onChange={handleChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
@@ -863,7 +977,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                           Required
                         </label>
                         <select
-                          value={question.required}
+                          value={String(question.required)}
                           onChange={(e) => updateCustomQuestion(question.id, 'required', e.target.value === 'true')}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                         >
