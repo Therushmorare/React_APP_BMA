@@ -1,7 +1,7 @@
-import ReportsPage from "./components/Reports/Reports";
+"use client";
+
+import Login from "./components/Login";
 
 export default function Home() {
-  return (
-    <ReportsPage />
-  );
+  return <Login />;
 }

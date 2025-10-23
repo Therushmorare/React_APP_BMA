@@ -478,20 +478,22 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
           {/* Footer */}
           <div className="p-6 border-t border-gray-200 space-y-3">
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors font-medium"
-          >
-            Delete Application
-          </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowInterviewSchedule(true)}
+                className="w-full bg-white text-green-700 border border-green-700 py-2 rounded-lg hover:bg-green-50 transition-colors font-medium"
+              >
+                Schedule Interview
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full bg-white text-red-600 border border-red-300 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
 
-          <button
-            onClick={() => setShowInterviewSchedule(true)}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Schedule Interview
-          </button>
-        </div>
         </div>
       </div>
 
