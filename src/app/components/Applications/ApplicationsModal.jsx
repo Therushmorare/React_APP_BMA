@@ -9,6 +9,7 @@ import { fetchEducation } from "../../services/api";
 import { fetchExperience } from "../../services/api";
 import { fetchSkills } from "../../services/api";
 import ApplicationScoreCard from "./ApplicationScoreCard";
+import ApplicationEvaluationCard from "./ApplicationEvaluationCard";
 
 const ApplicationModal = ({ application, onClose, onAction }) => {
   const isOpen = !!application;
@@ -421,24 +422,11 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 )}
 
                 {activeTab === "evaluation" && (
-                  <div className="space-y-3 text-sm">
-                    <label className="block text-gray-700 font-medium">Notes</label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="w-full border rounded-lg p-2"
-                      rows={4}
+                    <ApplicationEvaluationCard
+                      employeeId="YOUR_EMPLOYEE_ID" // get from session storage
+                      candidateId={application.id}
+                      jobId={application.job_id}
                     />
-                    <label className="block text-gray-700 font-medium mt-2">Rating</label>
-                    <input
-                      type="number"
-                      value={rating}
-                      min={0}
-                      max={5}
-                      onChange={(e) => setRating(Number(e.target.value))}
-                      className="w-full border rounded-lg p-2"
-                    />
-                  </div>
                 )}
 
                 {activeTab === "email" && (
