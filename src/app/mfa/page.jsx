@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function MFAPage() {
@@ -8,11 +8,24 @@ export default function MFAPage() {
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [userId, setUserId] = useState(null); // store user_id safely
 
-  const user_id = sessionStorage.getItem("user_id"); // retrieve stored user_id
+  // ✅ Load sessionStorage only in browser
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedUserId = sessionStorage.getItem("user_id");
+      if (!storedUserId) {
+        router.push("/login");
+      } else {
+        setUserId(storedUserId);
+      }
+    }
+  }, [router]);
 
   const handleVerify = async (e) => {
     e.preventDefault();
+    if (!userId) return;
+
     setLoading(true);
     setError("");
 
@@ -20,7 +33,7 @@ export default function MFAPage() {
       const res = await fetch("/api/hr/hrAuth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ admin_id: user_id, token }),
+        body: JSON.stringify({ admin_id: userId, token }),
       });
 
       const data = await res.json();
@@ -29,11 +42,8 @@ export default function MFAPage() {
         throw new Error(data.message || "Verification failed");
       }
 
-      // Store verified employee info (optional)
       sessionStorage.setItem("employee_email", data.email);
-
-      // Redirect to dashboard/home
-      router.push("/dashboard");
+      router.push("/applications");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -41,10 +51,7 @@ export default function MFAPage() {
     }
   };
 
-  if (!user_id) {
-    router.push("/login");
-    return null;
-  }
+  if (!userId) return null; // wait until useEffect sets it
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -52,11 +59,15 @@ export default function MFAPage() {
         onSubmit={handleVerify}
         className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm space-y-4"
       >
-        <h2 className="text-2xl font-bold text-gray-800 text-center">MFA Verification</h2>
+        <h2 className="text-2xl font-bold text-gray-800 text-center">
+          MFA Verification
+        </h2>
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         <div>
-          <label className="block text-gray-700 font-medium">Enter MFA Code</label>
+          <label className="block text-gray-700 font-medium">
+            Enter MFA Code
+          </label>
           <input
             type="text"
             value={token}
