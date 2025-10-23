@@ -44,7 +44,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <Image
-            src="assets/bma_logo.png"
+            src="./assets/bma_logo.png"
             alt="Company Logo"
             width={80}
             height={80}
