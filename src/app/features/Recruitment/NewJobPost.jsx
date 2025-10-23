@@ -1,36 +1,39 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react';
-import { Save, Eye, Plus, X, GripVertical, ChevronDown, Loader2, CheckCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { Save, Eye, Plus, X, GripVertical, Loader2, CheckCircle } from "lucide-react";
 
 const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
-  const [activeTab, setActiveTab] = useState('requirements');
+  const [activeTab, setActiveTab] = useState("requirements");
   const [isPreview, setIsPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // ---------- helpers: auth + fetch ----------
+  // ------------------ helpers: auth + json fetch ------------------
   const getAuth = () => {
-    const token = typeof window !== "undefined" ? sessionStorage.getItem('access_token') : null;
-    const employeeId = typeof window !== "undefined" ? sessionStorage.getItem('employee_id') : null;
+    const token = typeof window !== "undefined" ? sessionStorage.getItem("access_token") : null;
+    const employeeId = typeof window !== "undefined" ? sessionStorage.getItem("employee_id") : null;
     if (!token || !employeeId) {
-      throw new Error('Missing access_token or employee_id in sessionStorage');
+      throw new Error("Missing access_token or employee_id in sessionStorage");
     }
     return { token, employeeId };
   };
 
   const postJSON = async (url, token, body) => {
     const res = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
-    // Some backends return 200/201 with no JSON; be defensive
     let data = null;
-    try { data = await res.json(); } catch (_) { /* ignore */ }
+    try {
+      data = await res.json();
+    } catch (_) {
+      /* backend might return empty body */
+    }
     if (!res.ok) {
       const msg = (data && (data.message || data.error)) || `Request failed: ${res.status}`;
       throw new Error(msg);
@@ -38,208 +41,210 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     return data || {};
   };
 
-  // ---------- form state (unchanged UI; added fields for Filters tab) ----------
+  // ------------------ form state ------------------
   const [formData, setFormData] = useState(() => {
     if (existingJob) {
       return {
-        title: existingJob.title || '',
-        department: existingJob.department || '',
-        location: existingJob.location || '',
-        locationType: existingJob.locationType || 'onsite',
-        city: existingJob.city || '',
-        type: existingJob.type || 'Full-time',
-        seniorityLevel: existingJob.seniorityLevel || '',
-        status: existingJob.status || 'draft',
-        description: existingJob.description || '',
-        responsibilities: existingJob.responsibilities || '',
+        title: existingJob.title || "",
+        department: existingJob.department || "",
+        location: existingJob.location || "",
+        locationType: existingJob.locationType || "onsite",
+        city: existingJob.city || "",
+        type: existingJob.type || "Full-time",
+        seniorityLevel: existingJob.seniorityLevel || "",
+        status: existingJob.status || "draft",
+        description: existingJob.description || "",
+        responsibilities: existingJob.responsibilities || "",
         requiredSkills: existingJob.requiredSkills || [],
         preferredSkills: existingJob.preferredSkills || [],
-        education: existingJob.education || '',
-        salaryRange: existingJob.salaryRange || { min: '', max: '', currency: 'ZAR' },
-        benefits: existingJob.benefits || '',
-        postingDate: existingJob.postingDate || new Date().toISOString().split('T')[0],
-        applicationDeadline: existingJob.applicationDeadline || '',
+        education: existingJob.education || "",
+        salaryRange: existingJob.salaryRange || { min: "", max: "", currency: "ZAR" },
+        benefits: existingJob.benefits || "",
+        postingDate: existingJob.postingDate || new Date().toISOString().split("T")[0],
+        applicationDeadline: existingJob.applicationDeadline || "",
         customQuestions: existingJob.customQuestions || [],
         // Job Filters tab fields
-        experience: existingJob.experience || '',
-        preferredLocation: existingJob.preferredLocation || '',
-        qualification: existingJob.qualification || '',
-        offeringSalary: existingJob.offeringSalary || ''
+        experience: existingJob.experience || "",
+        preferredLocation: existingJob.preferredLocation || "",
+        qualification: existingJob.qualification || "",
+        offeringSalary: existingJob.offeringSalary || "",
+        // Candidate type for expected_candidate
+        expectedCandidateType: existingJob.expectedCandidateType || "external",
       };
     }
+
     return {
-      title: '',
-      department: '',
-      location: '',
-      locationType: 'onsite',
-      city: '',
-      type: 'Full-time',
-      seniorityLevel: '',
-      status: 'draft',
-      description: '',
-      responsibilities: '',
+      title: "",
+      department: "",
+      location: "",
+      locationType: "onsite",
+      city: "",
+      type: "Full-time",
+      seniorityLevel: "",
+      status: "draft",
+      description: "",
+      responsibilities: "",
       requiredSkills: [],
       preferredSkills: [],
-      education: '',
-      salaryRange: { min: '', max: '', currency: 'ZAR' },
-      benefits: '',
-      postingDate: new Date().toISOString().split('T')[0],
-      applicationDeadline: '',
+      education: "",
+      salaryRange: { min: "", max: "", currency: "ZAR" },
+      benefits: "",
+      postingDate: new Date().toISOString().split("T")[0],
+      applicationDeadline: "",
       customQuestions: [],
       // Job Filters tab fields
-      experience: '',
-      preferredLocation: '',
-      qualification: '',
-      offeringSalary: ''
+      experience: "",
+      preferredLocation: "",
+      qualification: "",
+      offeringSalary: "",
+      // Candidate type for expected_candidate
+      expectedCandidateType: "external",
     };
   });
 
-  const [newSkill, setNewSkill] = useState('');
-  const [newPreferredSkill, setNewPreferredSkill] = useState('');
-  const [skillType, setSkillType] = useState('required');
+  const [newSkill, setNewSkill] = useState("");
+  const [newPreferredSkill, setNewPreferredSkill] = useState("");
+  const [skillType, setSkillType] = useState("required");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
+    if (name.includes(".")) {
+      const [parent, child] = name.split(".");
+      setFormData((prev) => ({
         ...prev,
-        [parent]: { ...prev[parent], [child]: value }
+        [parent]: { ...prev[parent], [child]: value },
       }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
   const addSkill = (type) => {
-    const skill = type === 'required' ? newSkill : newPreferredSkill;
+    const skill = type === "required" ? newSkill : newPreferredSkill;
     if (skill.trim()) {
-      const skillArray = type === 'required' ? 'requiredSkills' : 'preferredSkills';
-      setFormData(prev => ({
+      const skillArray = type === "required" ? "requiredSkills" : "preferredSkills";
+      setFormData((prev) => ({
         ...prev,
-        [skillArray]: [...prev[skillArray], skill.trim()]
+        [skillArray]: [...prev[skillArray], skill.trim()],
       }));
-      if (type === 'required') setNewSkill('');
-      else setNewPreferredSkill('');
+      if (type === "required") setNewSkill("");
+      else setNewPreferredSkill("");
     }
   };
 
   const removeSkill = (index, type) => {
-    const skillArray = type === 'required' ? 'requiredSkills' : 'preferredSkills';
-    setFormData(prev => ({
+    const skillArray = type === "required" ? "requiredSkills" : "preferredSkills";
+    setFormData((prev) => ({
       ...prev,
-      [skillArray]: prev[skillArray].filter((_, i) => i !== index)
+      [skillArray]: prev[skillArray].filter((_, i) => i !== index),
     }));
   };
 
   const addCustomQuestion = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      customQuestions: [...prev.customQuestions, {
-        id: Date.now(),
-        question: '',
-        type: 'short-text',
-        required: true,
-        options: []
-      }]
+      customQuestions: [
+        ...prev.customQuestions,
+        {
+          id: Date.now(),
+          question: "",
+          type: "short-text",
+          required: true,
+          options: [],
+        },
+      ],
     }));
   };
 
   const updateCustomQuestion = (id, field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      customQuestions: prev.customQuestions.map(q =>
-        q.id === id ? { ...q, [field]: value } : q
-      )
+      customQuestions: prev.customQuestions.map((q) => (q.id === id ? { ...q, [field]: value } : q)),
     }));
   };
 
   const removeCustomQuestion = (id) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      customQuestions: prev.customQuestions.filter(q => q.id !== id)
+      customQuestions: prev.customQuestions.filter((q) => q.id !== id),
     }));
   };
 
   const addOption = (questionId) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      customQuestions: prev.customQuestions.map(q =>
-        q.id === questionId ? { ...q, options: [...q.options, ''] } : q
-      )
+      customQuestions: prev.customQuestions.map((q) =>
+        q.id === questionId ? { ...q, options: [...q.options, ""] } : q
+      ),
     }));
   };
 
   const updateOption = (questionId, optionIndex, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      customQuestions: prev.customQuestions.map(q =>
-        q.id === questionId ? {
-          ...q,
-          options: q.options.map((opt, i) => i === optionIndex ? value : opt)
-        } : q
-      )
+      customQuestions: prev.customQuestions.map((q) =>
+        q.id === questionId
+          ? { ...q, options: q.options.map((opt, i) => (i === optionIndex ? value : opt)) }
+          : q
+      ),
     }));
   };
 
   const removeOption = (questionId, optionIndex) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      customQuestions: prev.customQuestions.map(q =>
-        q.id === questionId ? {
-          ...q,
-          options: q.options.filter((_, i) => i !== optionIndex)
-        } : q
-      )
+      customQuestions: prev.customQuestions.map((q) =>
+        q.id === questionId ? { ...q, options: q.options.filter((_, i) => i !== optionIndex) } : q
+      ),
     }));
   };
 
-  // ---------- API wiring on submit ----------
+  // ------------------ API submit flow ------------------
   const handleSubmit = async (publishNow = false) => {
     setIsSubmitting(true);
     try {
       const { token, employeeId } = getAuth();
+      const eid = employeeId;
 
-      // 1) Create / Update Job Post
-      // NOTE: API schema for jobPost doesn’t include status; we still keep your local status.
-      const eid = employeeId; // using employee_id as {eid} path param as per spec
-      const expected_candidate = formData.seniorityLevel
+      // 1) Build expected_candidate
+      const expectedTitle = formData.seniorityLevel
         ? `${formData.seniorityLevel} ${formData.title}`.trim()
-        : formData.title || 'Candidate';
+        : formData.title || "Candidate";
+      const expected_candidate = `[${formData.expectedCandidateType === "internal" ? "Internal" : "External"}] ${expectedTitle}`;
 
-      // map responsibilities textarea into list (split by newlines or bullets)
-      const duties_list = (formData.responsibilities || '')
+      // 2) Build payload for jobPost
+      const duties_list = (formData.responsibilities || "")
         .split(/\r?\n|•/g)
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean);
-
-      const requirements_list = (formData.requiredSkills || []).map(String);
-      // documents_required_list not captured in UI; send empty array
-      const documents_required_list = [];
 
       const jobPostPayload = {
         employee_id: employeeId,
         expected_candidate,
-        job_title: formData.title || '',
-        employment_type: formData.type || '',
-        department: formData.department || '',
-        office: formData.locationType === 'onsite' ? (formData.city || '') :
-                formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1),
+        job_title: formData.title || "",
+        employment_type: formData.type || "",
+        department: formData.department || "",
+        office:
+          formData.locationType === "onsite"
+            ? formData.city || ""
+            : formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1),
         required_applicants_number: 1,
-        closing_date: formData.applicationDeadline || '',
-        description: formData.description || '',
-        requirements_list,
+        closing_date: formData.applicationDeadline || "",
+        description: formData.description || "",
+        requirements_list: (formData.requiredSkills || []).map(String),
         duties_list,
-        documents_required_list
+        documents_required_list: [],
       };
 
       const jobPostRes = await postJSON(`/api/hr/jobPost/${eid}`, token, jobPostPayload);
-      const jobId = (jobPostRes && (jobPostRes.job_id || jobPostRes.id || jobPostRes.data?.id))
-        || (existingJob && existingJob.id)
-        || String(Date.now()); // final fallback to keep flow moving
+      const jobId =
+        jobPostRes?.job_id ||
+        jobPostRes?.id ||
+        jobPostRes?.data?.id ||
+        existingJob?.id ||
+        String(Date.now());
 
-      // 2) Add Job Filters (experience, preferred location, qualification, salary)
-      // Guard: only send if at least one filter field has value
+      // 3) Filters (optional if any provided)
       const hasAnyFilter =
         (formData.experience && String(formData.experience).length > 0) ||
         (formData.preferredLocation && formData.preferredLocation.length > 0) ||
@@ -251,40 +256,39 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
           employee_id: employeeId,
           job_id: jobId,
           required_experience_years: Number(formData.experience || 0),
-          prefered_candidate_location: formData.preferredLocation || '',
-          prefered_qualification: formData.qualification || '',
-          offered_salary: Number(formData.offeringSalary || 0)
+          prefered_candidate_location: formData.preferredLocation || "",
+          prefered_qualification: formData.qualification || "",
+          offered_salary: Number(formData.offeringSalary || 0),
         };
         await postJSON(`/api/hr/jobFilters/${eid}/${jobId}`, token, jobFiltersPayload);
       }
 
-      // 3) Add Job Questions (loop each custom question)
-      // API expects: question_type, category, mandatory_status, question
+      // 4) Questions (loop)
       if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
-        const questionCalls = formData.customQuestions.map((q) => {
-          const payload = {
-            employee_id: employeeId,
-            job_id: jobId,
-            question_type: q.type || 'short-text',
-            category: 'General', // no category in UI; default to General
-            mandatory_status: q.required ? 'required' : 'optional',
-            question: q.question || ''
-          };
-          return postJSON(`/api/hr/jobQuestion/${eid}/${jobId}`, token, payload);
-        });
-        await Promise.all(questionCalls);
+        await Promise.all(
+          formData.customQuestions.map((q) => {
+            const payload = {
+              employee_id: employeeId,
+              job_id: jobId,
+              question_type: q.type || "short-text",
+              category: "General",
+              mandatory_status: q.required ? "required" : "optional",
+              question: q.question || "",
+            };
+            return postJSON(`/api/hr/jobQuestion/${eid}/${jobId}`, token, payload);
+          })
+        );
       }
 
-      // Compose local job data for parent handler
-      const jobData = {
+      // hand back to parent
+      const localJob = {
         id: jobId,
         ...formData,
-        status: publishNow ? 'Paused' : 'Draft',
+        status: publishNow ? "Paused" : "Draft",
         applicants: existingJob ? existingJob.applicants : 0,
-        createdAt: existingJob ? existingJob.createdAt : new Date().toISOString().split('T')[0]
+        createdAt: existingJob ? existingJob.createdAt : new Date().toISOString().split("T")[0],
       };
-
-      if (onSave) onSave(jobData);
+      onSave && onSave(localJob);
 
       if (publishNow) {
         setShowSuccess(true);
@@ -297,31 +301,36 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       }
     } catch (err) {
       console.error(err);
-      // keep UI the same; minimal interruption:
-      alert(`Could not submit job. ${err?.message || 'Please try again.'}`);
+      alert(`Could not submit job. ${err?.message || "Please try again."}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const departmentOptions = [
-    'Engineering', 'Product', 'Design', 'Analytics', 
-    'Marketing', 'Sales', 'HR', 'Operations', 'Finance', 'Legal'
+    "Engineering",
+    "Product",
+    "Design",
+    "Analytics",
+    "Marketing",
+    "Sales",
+    "HR",
+    "Operations",
+    "Finance",
+    "Legal",
   ];
 
-  const seniorityOptions = [
-    'Entry Level', 'Mid Level', 'Senior Level', 'Executive Level'
-  ];
+  const seniorityOptions = ["Entry Level", "Mid Level", "Senior Level", "Executive Level"];
 
   const questionTypes = [
-    { value: 'short-text', label: 'Short Text' },
-    { value: 'long-text', label: 'Long Text' },
-    { value: 'multiple-choice', label: 'Multiple Choice' },
-    { value: 'yes-no', label: 'Yes/No' },
-    { value: 'file-upload', label: 'File Upload' }
+    { value: "short-text", label: "Short Text" },
+    { value: "long-text", label: "Long Text" },
+    { value: "multiple-choice", label: "Multiple Choice" },
+    { value: "yes-no", label: "Yes/No" },
+    { value: "file-upload", label: "File Upload" },
   ];
 
-  // ------------------ UI (unchanged layout & styling) ------------------
+  // ------------------ Preview (unchanged) ------------------
   if (isPreview) {
     return (
       <div className="h-full overflow-y-auto bg-gray-50">
@@ -347,17 +356,28 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         <div className="p-6">
           <div className="bg-white rounded-lg border border-gray-200 p-8 max-w-4xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{formData.title || 'Job Title'}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">{formData.title || "Job Title"}</h1>
               <div className="flex flex-wrap gap-6 text-sm text-gray-600">
-                <span><span className="font-medium">Department:</span> {formData.department}</span>
-                <span><span className="font-medium">Type:</span> {formData.type}</span>
-                <span><span className="font-medium">Level:</span> {formData.seniorityLevel}</span>
-                <span><span className="font-medium">Location:</span> {
-                  formData.locationType === 'onsite' ? formData.city : 
-                  formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
-                }</span>
+                <span>
+                  <span className="font-medium">Department:</span> {formData.department}
+                </span>
+                <span>
+                  <span className="font-medium">Type:</span> {formData.type}
+                </span>
+                <span>
+                  <span className="font-medium">Level:</span> {formData.seniorityLevel}
+                </span>
+                <span>
+                  <span className="font-medium">Location:</span>{" "}
+                  {formData.locationType === "onsite"
+                    ? formData.city
+                    : formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)}
+                </span>
                 {formData.salaryRange.min && (
-                  <span><span className="font-medium">Salary:</span> {formData.salaryRange.currency} {formData.salaryRange.min} - {formData.salaryRange.max}</span>
+                  <span>
+                    <span className="font-medium">Salary:</span> {formData.salaryRange.currency}{" "}
+                    {formData.salaryRange.min} - {formData.salaryRange.max}
+                  </span>
                 )}
               </div>
             </div>
@@ -421,14 +441,16 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 <section>
                   <h2 className="text-xl font-semibold mb-3">Application Questions</h2>
                   <div className="space-y-4">
-                    {formData.customQuestions.map((question, index) => (
+                    {formData.customQuestions.map((question) => (
                       <div key={question.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-2">
                           <p className="font-medium text-gray-900">{question.question}</p>
                           {question.required && <span className="text-red-500 text-sm">*</span>}
                         </div>
-                        <p className="text-sm text-gray-500 mb-2">Type: {questionTypes.find(t => t.value === question.type)?.label}</p>
-                        {question.type === 'multiple-choice' && question.options.length > 0 && (
+                        <p className="text-sm text-gray-500 mb-2">
+                          Type: {questionTypes.find((t) => t.value === question.type)?.label}
+                        </p>
+                        {question.type === "multiple-choice" && question.options.length > 0 && (
                           <div className="space-y-1">
                             {question.options.map((option, i) => (
                               <div key={i} className="flex items-center">
@@ -450,6 +472,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     );
   }
 
+  // ------------------ Main UI (layout kept) ------------------
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Success Alert - Fixed Position */}
@@ -458,43 +481,38 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
           <CheckCircle size={20} className="text-green-600 mr-3" />
           <div>
             <h4 className="text-sm font-medium text-green-800">Job Post Submitted Successfully!</h4>
-            <p className="text-sm text-green-700 mt-1">Your job posting has been submitted for approval and will be reviewed shortly.</p>
+            <p className="text-sm text-green-700 mt-1">
+              Your job posting has been submitted for approval and will be reviewed shortly.
+            </p>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div className={`border-b border-gray-200 p-4 ${showSuccess ? 'mt-16' : ''}`}>
-        
+      <div className={`border-b border-gray-200 p-4 ${showSuccess ? "mt-16" : ""}`}>
         {/* Tab Navigation */}
         <div className="mt-4 flex bg-gray-100 rounded-lg p-1">
           <button
-            onClick={() => setActiveTab('jobFilters')}
+            onClick={() => setActiveTab("jobFilters")}
             className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'jobFilters'
-                ? 'bg-white text-green-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              activeTab === "jobFilters" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Job Filters
           </button>
 
           <button
-            onClick={() => setActiveTab('requirements')}
+            onClick={() => setActiveTab("requirements")}
             className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'requirements'
-                ? 'bg-white text-green-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              activeTab === "requirements" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Job Requirements
           </button>
           <button
-            onClick={() => setActiveTab('questions')}
+            onClick={() => setActiveTab("questions")}
             className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'questions'
-                ? 'bg-white text-green-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              activeTab === "questions" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Application Questions
@@ -504,82 +522,82 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
       {/* Content Area */}
       <div className="flex-1 overflow-y-auto p-4">
-        {activeTab === 'jobFilters' &&(
+        {activeTab === "jobFilters" && (
           <div className="space-y-6">
-          {/* Job Filters */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expected Experience <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="number"
-                name="experience"
-                value={formData.experience}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                placeholder="e.g 5 years"
-              />
+            {/* Job Filters */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expected Experience <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="experience"
+                  value={formData.experience}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+                  placeholder="e.g 5 years"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Preferred Candidate Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="preferredLocation"
+                  value={formData.preferredLocation}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+                  placeholder="e.g Midrand"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Preferred Candidate Location <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="text"
-                name="preferredLocation"
-                value={formData.preferredLocation}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                placeholder="e.g Midrand"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Preferred Qualification <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="qualification"
-              value={formData.qualification}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-            >
-              <option value="">Select qualification</option>
-              <option value="HighSchool Diploma">HighSchool Diploma</option>
-              <option value="Certificate">Certificate</option>
-              <option value="Diploma">Diploma</option>
-              <option value="Degree">Degree</option>
-              <option value="Masters">Masters</option>
-              <option value="PhD">PhD</option>
-            </select>
-          </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Preferred Qualification <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="qualification"
+                  value={formData.qualification}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+                >
+                  <option value="">Select qualification</option>
+                  <option value="HighSchool Diploma">HighSchool Diploma</option>
+                  <option value="Certificate">Certificate</option>
+                  <option value="Diploma">Diploma</option>
+                  <option value="Degree">Degree</option>
+                  <option value="Masters">Masters</option>
+                  <option value="PhD">PhD</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Offering Salary <span className="text-red-500">*</span>
-              </label>
-              <input 
-                type="number"
-                name="offeringSalary"
-                value={formData.offeringSalary}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                placeholder="e.g R50 000"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Offering Salary <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="offeringSalary"
+                  value={formData.offeringSalary}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
+                  placeholder="e.g R50 000"
+                />
+              </div>
             </div>
-          </div>
-
           </div>
         )}
 
-        {activeTab === 'requirements' && (
+        {activeTab === "requirements" && (
           <div className="space-y-6">
             {/* Basic Information */}
             <div className="grid grid-cols-1 gap-4">
@@ -611,8 +629,10 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                   >
                     <option value="">Select Department</option>
-                    {departmentOptions.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
+                    {departmentOptions.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -629,11 +649,39 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                   >
                     <option value="">Select Level</option>
-                    {seniorityOptions.map(level => (
-                      <option key={level} value={level}>{level}</option>
+                    {seniorityOptions.map((level) => (
+                      <option key={level} value={level}>
+                        {level}
+                      </option>
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Candidate Type (Internal/External) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Candidate Type <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {["internal", "external"].map((ct) => (
+                    <button
+                      key={ct}
+                      type="button"
+                      onClick={() => handleChange({ target: { name: "expectedCandidateType", value: ct } })}
+                      className={`py-2 px-3 text-sm font-medium border rounded-lg transition-colors ${
+                        formData.expectedCandidateType === ct
+                          ? "bg-green-50 border-green-500 text-green-700"
+                          : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {ct.charAt(0).toUpperCase() + ct.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">
+                  Used to mark whether this hire is intended for internal movement or external recruitment.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -655,9 +703,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                   <select
                     name="status"
                     value={formData.status}
@@ -677,22 +723,22 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                   Location Type <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2 mb-2">
-                  {['onsite', 'hybrid', 'remote'].map(type => (
+                  {["onsite", "hybrid", "remote"].map((type) => (
                     <button
                       key={type}
                       type="button"
-                      onClick={() => handleChange({ target: { name: 'locationType', value: type } })}
+                      onClick={() => handleChange({ target: { name: "locationType", value: type } })}
                       className={`py-2 px-3 text-sm font-medium border rounded-lg transition-colors ${
                         formData.locationType === type
-                          ? 'bg-green-50 border-green-500 text-green-700'
-                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                          ? "bg-green-50 border-green-500 text-green-700"
+                          : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                       }`}
                     >
                       {type.charAt(0).toUpperCase() + type.slice(1)}
                     </button>
                   ))}
                 </div>
-                {formData.locationType === 'onsite' && (
+                {formData.locationType === "onsite" && (
                   <input
                     type="text"
                     name="city"
@@ -704,11 +750,9 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 )}
               </div>
 
-              {/* Salary Range */}
+              {/* Salary Range (UI only, not sent) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Salary Range (Optional)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Salary Range (Optional)</label>
                 <div className="grid grid-cols-3 gap-2">
                   <select
                     name="salaryRange.currency"
@@ -742,9 +786,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Posting Date
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Posting Date</label>
                   <input
                     type="date"
                     name="postingDate"
@@ -755,9 +797,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Application Deadline
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Application Deadline</label>
                   <input
                     type="date"
                     name="applicationDeadline"
@@ -786,9 +826,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
               {/* Key Responsibilities */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Key Responsibilities
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Key Responsibilities</label>
                 <textarea
                   name="responsibilities"
                   value={formData.responsibilities}
@@ -801,9 +839,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
               {/* Required Skills */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Required Skills
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
@@ -811,11 +847,11 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                     onChange={(e) => setNewSkill(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                     placeholder="Add a required skill"
-                    onKeyPress={(e) => e.key === 'Enter' && addSkill('required')}
+                    onKeyPress={(e) => e.key === "Enter" && addSkill("required")}
                   />
                   <button
                     type="button"
-                    onClick={() => addSkill('required')}
+                    onClick={() => addSkill("required")}
                     className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                   >
                     <Plus size={14} />
@@ -823,11 +859,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {formData.requiredSkills.map((skill, index) => (
-                    <span key={index} className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm flex items-center">
+                    <span
+                      key={index}
+                      className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm flex items-center"
+                    >
                       {skill}
                       <button
                         type="button"
-                        onClick={() => removeSkill(index, 'required')}
+                        onClick={() => removeSkill(index, "required")}
                         className="ml-2 text-red-600 hover:text-red-800"
                       >
                         <X size={12} />
@@ -839,9 +878,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
               {/* Preferred Skills */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Preferred Skills
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Skills</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
@@ -849,11 +886,11 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                     onChange={(e) => setNewPreferredSkill(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                     placeholder="Add a preferred skill"
-                    onKeyPress={(e) => e.key === 'Enter' && addSkill('preferred')}
+                    onKeyPress={(e) => e.key === "Enter" && addSkill("preferred")}
                   />
                   <button
                     type="button"
-                    onClick={() => addSkill('preferred')}
+                    onClick={() => addSkill("preferred")}
                     className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                   >
                     <Plus size={14} />
@@ -861,11 +898,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {formData.preferredSkills.map((skill, index) => (
-                    <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center"
+                    >
                       {skill}
                       <button
                         type="button"
-                        onClick={() => removeSkill(index, 'preferred')}
+                        onClick={() => removeSkill(index, "preferred")}
                         className="ml-2 text-blue-600 hover:text-blue-800"
                       >
                         <X size={12} />
@@ -892,9 +932,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
               {/* Benefits */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Benefits & Perks
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Benefits & Perks</label>
                 <textarea
                   name="benefits"
                   value={formData.benefits}
@@ -908,12 +946,14 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
           </div>
         )}
 
-        {activeTab === 'questions' && (
+        {activeTab === "questions" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-medium text-gray-900">Custom Application Questions</h3>
-                <p className="text-sm text-gray-600">Add custom questions to gather specific information from applicants</p>
+                <p className="text-sm text-gray-600">
+                  Add custom questions to gather specific information from applicants
+                </p>
               </div>
               <button
                 type="button"
@@ -944,13 +984,11 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Question Text
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
                       <input
                         type="text"
                         value={question.question}
-                        onChange={(e) => updateCustomQuestion(question.id, 'question', e.target.value)}
+                        onChange={(e) => updateCustomQuestion(question.id, "question", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                         placeholder="Enter your question here..."
                       />
@@ -958,27 +996,25 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Answer Type
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Answer Type</label>
                         <select
                           value={question.type}
-                          onChange={(e) => updateCustomQuestion(question.id, 'type', e.target.value)}
+                          onChange={(e) => updateCustomQuestion(question.id, "type", e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                         >
-                          {questionTypes.map(type => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
+                          {questionTypes.map((type) => (
+                            <option key={type.value} value={type.value}>
+                              {type.label}
+                            </option>
                           ))}
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Required
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Required</label>
                         <select
                           value={String(question.required)}
-                          onChange={(e) => updateCustomQuestion(question.id, 'required', e.target.value === 'true')}
+                          onChange={(e) => updateCustomQuestion(question.id, "required", e.target.value === "true")}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
                         >
                           <option value="true">Yes</option>
@@ -987,12 +1023,10 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
                       </div>
                     </div>
 
-                    {question.type === 'multiple-choice' && (
+                    {question.type === "multiple-choice" && (
                       <div>
                         <div className="flex justify-between items-center mb-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Answer Options
-                          </label>
+                          <label className="block text-sm font-medium text-gray-700">Answer Options</label>
                           <button
                             type="button"
                             onClick={() => addOption(question.id)}
@@ -1055,7 +1089,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
           >
             Cancel
           </button>
-          
+
           <div className="flex space-x-3">
             <button
               type="button"
