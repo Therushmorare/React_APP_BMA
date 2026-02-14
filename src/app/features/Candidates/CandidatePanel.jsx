@@ -296,7 +296,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
             </div>
 
             {/* Documents Section */}
-            <div className="space-y-3">
+            {/*<div className="space-y-3">
               <h4 className="font-medium text-gray-900">Documents</h4>
               <div className="grid grid-cols-2 gap-3">
                 
@@ -333,7 +333,8 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
                   </div>
                 </button>
               </div>
-            </div>
+            </div>*/}
+
           </div>
 
           {/* Footer */}
