@@ -1,14 +1,41 @@
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import CandidateFilters from './CandidatesFilters';
 import CandidateTable from './CandidatesTable';
 import CandidatePagination from './CandidatesPagination';
 import CandidateDetailsPanel from '../../features/Candidates/CandidatePanel';
-import { generateSampleCandidates, filterCandidates, sortCandidates } from '@/app/utils/candidateData';
+import { filterCandidates, sortCandidates } from '@/app/utils/candidateData';
 
 const ITEMS_PER_PAGE = 20;
+
+/* Map backend applicant → frontend candidate format */
+const mapApplicantToCandidate = (applicant) => {
+  const fullName = `${applicant.first_name} ${applicant.last_name}`;
+
+  return {
+    id: applicant.applicant_id,
+    name: fullName,
+    email: applicant.email,
+    phone: applicant.phone_number,
+    position: "Applicant",
+    cv: `${fullName.replace(/\s+/g, "_")}_cv.pdf`,
+    createdAt: applicant.applied_at?.split("T")[0],
+    stage: applicant.application_status,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=22c55e&color=ffffff&size=128`,
+    experienceYears: 0,
+    qualifications: applicant.professional_summary || "N/A",
+    type: "external",
+    answers: {
+      whyCompany: applicant.professional_summary || "N/A",
+      strengths: "N/A",
+      availability: "N/A"
+    }
+  };
+};
+
 const CandidatesPage = () => {
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     dateRange: '',
@@ -21,38 +48,73 @@ const CandidatesPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setCurrentPage(1); 
-  };
 
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: 'ascending'
   });
 
-  const allCandidates = useMemo(() => generateSampleCandidates(3678), []);
+  const [allCandidates, setAllCandidates] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  /* Fetch real applicants from backend */
+  useEffect(() => {
+    const fetchApplicants = async () => {
+      try {
+        const response = await fetch(
+          "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/all_applicants",
+          {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch applicants");
+        }
+
+        const data = await response.json();
+        const mapped = data.map(mapApplicantToCandidate);
+
+        setAllCandidates(mapped);
+
+      } catch (error) {
+        console.error("Error fetching applicants:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApplicants();
+  }, []);
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
 
   const handleSearch = () => {
-    console.log('Searching for:', searchQuery, 'with filters:', filters);
     setCurrentPage(1);
   };
 
   const handleSort = (key) => {
-    setSortConfig(prevConfig => ({
+    setSortConfig(prev => ({
       key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+      direction:
+        prev.key === key && prev.direction === 'asc'
+          ? 'desc'
+          : 'asc'
     }));
   };
 
   const handleViewCandidate = (candidate) => {
-  setSelectedCandidate(candidate);
-  setIsPanelOpen(true);
+    setSelectedCandidate(candidate);
+    setIsPanelOpen(true);
   };
 
   const handleClosePanel = () => {
-  setIsPanelOpen(false);
-  setSelectedCandidate(null);
+    setIsPanelOpen(false);
+    setSelectedCandidate(null);
   };
 
   const handleDeleteCandidate = (candidateId) => {
@@ -81,8 +143,18 @@ const CandidatesPage = () => {
 
   const totalPages = Math.ceil(filteredAndSortedCandidates.length / ITEMS_PER_PAGE);
 
+  /* Loading State */
+  if (loading) {
+    return (
+      <div className="p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <p className="text-gray-600 text-sm">Loading applicants...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-3">Candidates</h1>
@@ -101,7 +173,7 @@ const CandidatesPage = () => {
         totalCandidates={filteredAndSortedCandidates.length}
       />
 
-      {/* Candidates Table */}
+      {/* Table */}
       <CandidateTable
         candidates={paginatedCandidates}
         sortConfig={sortConfig}
@@ -121,7 +193,7 @@ const CandidatesPage = () => {
         />
       )}
 
-      {/* Candidate Detail Panel */}
+      {/* Details Panel */}
       <CandidateDetailsPanel
         candidate={selectedCandidate}
         isOpen={isPanelOpen}
