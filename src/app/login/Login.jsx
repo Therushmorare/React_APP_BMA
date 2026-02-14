@@ -20,6 +20,7 @@ export default function LoginPage() {
       const res = await fetch("https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/hrLogin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
