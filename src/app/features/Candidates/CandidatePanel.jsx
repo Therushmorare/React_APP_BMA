@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Phone, FileText, Star, Send } from 'lucide-react';
-import { multiplechoice, calculateTotalScore, getFeedback, getPerformanceLevel } from '@/app/utils/applicationQuizData';
+import { useApplicationEvaluation } from '@/app/utils/useApplicationEvaluation';
 
 const CandidatePanel = ({ candidate, isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('application');
@@ -22,16 +22,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
     { value: 'onboarding', label: 'Onboarding Welcome' }
   ];
 
-  // Sample questions and answers
-  const userAnswers = [
-      { questionId: 1, selectedOptionId: 'a' },
-      { questionId: 2, selectedOptionId: 'a' },
-      { questionId: 3, selectedOptionId: 'a' },
-      { questionId: 4, selectedOptionId: 'a' }
-    ];
-  
-    const totalScore = calculateTotalScore(userAnswers);
-    const performance = getPerformanceLevel(totalScore);
+  const { applications, loading, error } = useApplicationEvaluation(candidate?.id);
 
   useEffect(() => {
     if (isOpen && candidate) {
@@ -166,45 +157,61 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
             <div className="space-y-4">
               {/* Application Tab */}
               {activeTab === 'application' && (
-                <div className="space-y-4">
-                  {/* Score Summary */}
-                  <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-gray-900">Application Score</h4>
-                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        performance.color === 'green' ? 'bg-green-100 text-green-800' :
-                        performance.color === 'blue' ? 'bg-blue-100 text-blue-800' :
-                        performance.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {performance.level}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-2xl font-bold text-gray-900">{totalScore} / {multiplechoice.totalPossiblePoints}</p>
-                      <p className="text-sm text-gray-600">{performance.message}</p>
-                    </div>
-                  </div>
+                <>
+                  {loading && <p>Loading application data...</p>}
+                  {error && <p className="text-red-500">{error}</p>}
+                  {!loading && !error && applications.length === 0 && (
+                    <p>No applications found for this candidate.</p>
+                  )}
 
-                  <h4 className="font-medium text-gray-900">Application Questions</h4>
-                  {multiplechoice.questions.map((question) => {
-                    const userAnswer = userAnswers.find(a => a.questionId === question.id);
-                    const selectedOption = question.options.find(opt => opt.id === userAnswer?.selectedOptionId);
-                    
+                  {!loading && !error && applications.map((application) => {
+                    const systemScore = application.backendScore?.candidate_application_score || 0;
+                    const mcScore = application.mcScore || 0;
+                    const finalScore = systemScore + mcScore;
+                    const totalPossible = 100 + 40; // adjust based on your scoring
+                    const performance = application.performance || { level: 'N/A', color: 'gray', message: '' };
+
                     return (
-                      <div key={question.id} className="bg-gray-50 rounded-lg p-4 border-l-4 border-green-700">
-                        <div className="flex items-start justify-between mb-2">
-                          <p className="font-medium text-gray-800">{question.question}</p>
-                          <span className="text-sm font-semibold text-green-700 ml-2 whitespace-nowrap">
-                            {selectedOption?.points}/{question.points} pts
-                          </span>
+                      <div key={application.job_id} className="space-y-4">
+                        {/* Score Summary */}
+                        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-gray-900">Application Score</h4>
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              performance.color === 'green' ? 'bg-green-100 text-green-800' :
+                              performance.color === 'blue' ? 'bg-blue-100 text-blue-800' :
+                              performance.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>{performance.level}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-2xl font-bold text-gray-900">{finalScore} / {totalPossible}</p>
+                            <p className="text-sm text-gray-600">{performance.message}</p>
+                          </div>
                         </div>
-                        <p className="text-gray-600 text-sm mb-2">{selectedOption?.text}</p>
-                        <p className="text-xs text-gray-500 italic">{selectedOption?.feedback}</p>
+
+                        {/* Questions */}
+                        {application.questions?.length > 0 && (
+                          <>
+                            <h4 className="font-medium text-gray-900">Application Questions</h4>
+                            {application.questions.map((question, index) => (
+                              <div key={index} className="bg-gray-50 rounded-lg p-4 border-l-4 border-green-700">
+                                <div className="flex items-start justify-between mb-2">
+                                  <p className="font-medium text-gray-800">{question.question}</p>
+                                  <span className="text-sm font-semibold text-green-700 ml-2 whitespace-nowrap">
+                                    {question.points_obtained || 0}/{question.total_points || 0} pts
+                                  </span>
+                                </div>
+                                <p className="text-gray-600 text-sm mb-2">{question.response}</p>
+                                {question.feedback && <p className="text-xs text-gray-500 italic">{question.feedback}</p>}
+                              </div>
+                            ))}
+                          </>
+                        )}
                       </div>
                     );
                   })}
-                </div>
+                </>
               )}
 
               {/* Evaluation Tab */}
@@ -292,8 +299,20 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
             <div className="space-y-3">
               <h4 className="font-medium text-gray-900">Documents</h4>
               <div className="grid grid-cols-2 gap-3">
+                
                 <button
-                  onClick={() => console.log('Download CV')}
+                  onClick={() => {
+                    if (candidate.cvUrl) {
+                      const link = document.createElement("a");
+                      link.href = candidate.cvUrl;
+                      link.download = candidate.cv;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    } else {
+                      alert("CV not available");
+                    }
+                  }}
                   className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <FileText size={16} className="text-green-700" />
