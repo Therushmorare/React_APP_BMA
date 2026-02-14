@@ -10,19 +10,18 @@ import { filterCandidates, sortCandidates } from '@/app/utils/candidateData';
 const ITEMS_PER_PAGE = 20;
 
 /* Map backend applicant → frontend candidate format */
-const mapApplicantToCandidate = (applicant) => {
+const mapApplicantToCandidate = (applicant, resumes = []) => {
   const fullName = `${applicant.first_name} ${applicant.last_name}`;
-
   return {
     id: applicant.applicant_id,
     name: fullName,
     email: applicant.email,
     phone: applicant.phone_number,
     position: "Applicant",
-    cv: `${fullName.replace(/\s+/g, "_")}_cv.pdf`,
-    createdAt: applicant.applied_at?.split("T")[0],
     stage: applicant.application_status,
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=22c55e&color=ffffff&size=128`,
+    resumes, // <-- attach resumes here
+    createdAt: applicant.applied_at?.split("T")[0],
     experienceYears: 0,
     qualifications: applicant.professional_summary || "N/A",
     type: "external",
@@ -63,21 +62,21 @@ const CandidatesPage = () => {
       try {
         const response = await fetch(
           "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/all_applicants",
-          {
-            method: "GET",
-            headers: { "Accept": "application/json" }
-          }
+          { method: "GET", headers: { Accept: "application/json" } }
         );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch applicants");
-        }
+        if (!response.ok) throw new Error("Failed to fetch applicants");
 
         const data = await response.json();
-        const mapped = data.map(mapApplicantToCandidate);
 
-        setAllCandidates(mapped);
+        // Fetch resumes for each applicant in parallel
+        const candidates = await Promise.all(
+          data.map(async (applicant) => {
+            const resumes = await fetchApplicantResumes(applicant.applicant_id);
+            return mapApplicantToCandidate(applicant, resumes);
+          })
+        );
 
+        setAllCandidates(candidates);
       } catch (error) {
         console.error("Error fetching applicants:", error);
       } finally {
@@ -87,6 +86,21 @@ const CandidatesPage = () => {
 
     fetchApplicants();
   }, []);
+
+const fetchApplicantResumes = async (applicantId) => {
+    try {
+      const res = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/myApplications/${applicantId}`
+      );
+      if (!res.ok) throw new Error("Failed to fetch applicant resumes");
+
+      const data = await res.json();
+      return data.resumes || []; // Return the resumes array
+    } catch (err) {
+      console.error("Error fetching resumes for applicant:", applicantId, err);
+      return [];
+    }
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
