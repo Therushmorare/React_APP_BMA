@@ -168,7 +168,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
                     const systemScore = application.backendScore?.candidate_application_score || 0;
                     const mcScore = application.mcScore || 0;
                     const finalScore = systemScore + mcScore;
-                    const totalPossible = 100 + 40; // adjust based on your scoring
+                    const totalPossible = 100; // adjust based on your scoring
                     const performance = application.performance || { level: 'N/A', color: 'gray', message: '' };
 
                     return (
@@ -186,7 +186,6 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
                           </div>
                           <div className="flex items-center justify-between">
                             <p className="text-2xl font-bold text-gray-900">{finalScore} / {totalPossible}</p>
-                            <p className="text-sm text-gray-600">{performance.message}</p>
                           </div>
                         </div>
 
