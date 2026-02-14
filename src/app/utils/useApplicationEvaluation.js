@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { calculateTotalScore, getPerformanceLevel } from "@/app/utils/multiplechoice";
+import { calculateTotalScore, getPerformanceLevel } from "./applicationQuizData";
 
 const BASE_URL = "https://jellyfish-app-z83s2.ondigitalocean.app";
 
