@@ -30,54 +30,39 @@ const ReportsPage = () => {
     try {
       const base = "https://jellyfish-app-z83s2.ondigitalocean.app";
 
-      const [
-        applicantsRes,
-        interviewsRes,
-        postsRes,
-        totalAppliedRes,
-        totalPostsRes,
-        totalOpenRes
-      ] = await Promise.all([
-        fetch(`${base}/api/hr/all_applicants`),
-        fetch(`${base}/api/hr/allInterviews`),
-        fetch(`${base}/api/candidate/allPosts`),
-        fetch(`${base}/api/candidate/totalApplied`),
-        fetch(`${base}/api/candidate/totalJobPosts`),
-        fetch(`${base}/api/candidate/totalOpenPositions`)
-      ]);
+      const safeFetch = async (url) => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return [];
+          return await res.json();
+        } catch {
+          return [];
+        }
+      };
 
-      if (
-        !applicantsRes.ok ||
-        !interviewsRes.ok ||
-        !postsRes.ok
-      ) {
-        throw new Error("Failed to fetch reports data");
-      }
+      const applicants = await safeFetch(`${base}/api/hr/all_applicants`);
+      const interviews = await safeFetch(`${base}/api/hr/allInterviews`);
+      const posts = await safeFetch(`${base}/api/candidate/allPosts`);
+      const totalApplied = await safeFetch(`${base}/api/candidate/totalApplied`);
+      const totalPosts = await safeFetch(`${base}/api/candidate/totalJobPosts`);
+      const totalOpen = await safeFetch(`${base}/api/candidate/totalOpenPositions`);
 
-      const applicants = await applicantsRes.json();
-      const interviews = await interviewsRes.json();
-      const posts = await postsRes.json();
-      const totalApplied = await totalAppliedRes.json();
-      const totalPosts = await totalPostsRes.json();
-      const totalOpen = await totalOpenRes.json();
+      console.log("Applicants:", applicants);
+      console.log("Interviews:", interviews);
 
       const totalApplications = Array.isArray(applicants)
         ? applicants.length
-        : 0;
+        : applicants?.total || 0;
 
       const totalInterviews = Array.isArray(interviews)
         ? interviews.length
         : 0;
 
-      const completedInterviews = interviews?.filter(
-        i => i.status?.toLowerCase() === "completed"
-      )?.length || 0;
-
-      const totalOffers = applicants?.filter(
+      const totalOffers = applicants?.filter?.(
         a => a.status?.toLowerCase() === "offered"
       )?.length || 0;
 
-      const totalHires = applicants?.filter(
+      const totalHires = applicants?.filter?.(
         a => a.status?.toLowerCase() === "hired"
       )?.length || 0;
 
@@ -93,71 +78,49 @@ const ReportsPage = () => {
         ? Math.round((totalHires / totalOffers) * 100)
         : 0;
 
-      // ----------------------------
-      // KPI DATA
-      // ----------------------------
       const kpiData = {
         totalApplications,
         applicationToInterview,
         interviewToOffer,
         offerAcceptance,
-        averageTimeToHire: 30 // until backend provides real metric
+        averageTimeToHire: 30
       };
 
-      // ----------------------------
-      // FUNNEL DATA
-      // ----------------------------
       const funnelData = [
         { stage: "Applications", count: totalApplications, percentage: 100 },
-        {
-          stage: "Interviews",
-          count: totalInterviews,
-          percentage: applicationToInterview
-        },
-        {
-          stage: "Offers",
-          count: totalOffers,
-          percentage: interviewToOffer
-        },
-        {
-          stage: "Hires",
-          count: totalHires,
-          percentage: offerAcceptance
-        }
+        { stage: "Interviews", count: totalInterviews, percentage: applicationToInterview },
+        { stage: "Offers", count: totalOffers, percentage: interviewToOffer },
+        { stage: "Hires", count: totalHires, percentage: offerAcceptance }
       ];
 
-      // ----------------------------
-      // PERFORMANCE TABLE (Grouped by Position)
-      // ----------------------------
       const performanceMap = {};
 
-      applicants?.forEach(app => {
-        const position = app.job_code || "Unknown";
+      if (Array.isArray(applicants)) {
+        applicants.forEach(app => {
+          const position = app.job_code || "Unknown";
 
-        if (!performanceMap[position]) {
-          performanceMap[position] = {
-            position,
-            applicants: 0,
-            interviews: 0,
-            offers: 0,
-            hires: 0
-          };
-        }
+          if (!performanceMap[position]) {
+            performanceMap[position] = {
+              position,
+              applicants: 0,
+              interviews: 0,
+              offers: 0,
+              hires: 0
+            };
+          }
 
-        performanceMap[position].applicants++;
+          performanceMap[position].applicants++;
 
-        if (app.status?.toLowerCase() === "interviewed") {
-          performanceMap[position].interviews++;
-        }
+          if (app.status?.toLowerCase() === "interviewed")
+            performanceMap[position].interviews++;
 
-        if (app.status?.toLowerCase() === "offered") {
-          performanceMap[position].offers++;
-        }
+          if (app.status?.toLowerCase() === "offered")
+            performanceMap[position].offers++;
 
-        if (app.status?.toLowerCase() === "hired") {
-          performanceMap[position].hires++;
-        }
-      });
+          if (app.status?.toLowerCase() === "hired")
+            performanceMap[position].hires++;
+        });
+      }
 
       const performanceData = Object.values(performanceMap).map(p => {
         const conversionRate = p.applicants
@@ -184,7 +147,8 @@ const ReportsPage = () => {
       });
 
     } catch (err) {
-      setError(err.message);
+      console.error("Reports error:", err);
+      setError("Failed to load reports");
     } finally {
       setLoading(false);
     }
