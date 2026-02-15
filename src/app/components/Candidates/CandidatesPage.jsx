@@ -17,7 +17,7 @@ const mapApplicantToCandidate = (applicant, resumes = []) => {
     name: fullName,
     email: applicant.email,
     phone: applicant.phone_number,
-    position: "Applicant",
+    position: "Candidate",
     stage: applicant.application_status,
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=22c55e&color=ffffff&size=128`,
     resumes, // <-- attach resumes here
@@ -47,13 +47,13 @@ const CandidatesPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: 'ascending'
   });
 
   const [allCandidates, setAllCandidates] = useState([]);
+  const [screeningCandidates, setScreeningCandidates] = useState([]); // NEW: Screening stage
   const [loading, setLoading] = useState(true);
 
   /* Fetch real applicants from backend */
@@ -77,6 +77,11 @@ const CandidatesPage = () => {
         );
 
         setAllCandidates(candidates);
+
+        // Filter only SCREENING stage candidates
+        const screening = candidates.filter(c => c.stage?.toUpperCase() === "SCREENING");
+        setScreeningCandidates(screening);
+
       } catch (error) {
         console.error("Error fetching applicants:", error);
       } finally {
@@ -87,7 +92,7 @@ const CandidatesPage = () => {
     fetchApplicants();
   }, []);
 
-const fetchApplicantResumes = async (applicantId) => {
+  const fetchApplicantResumes = async (applicantId) => {
     try {
       const res = await fetch(
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/myApplications/${applicantId}`
@@ -107,17 +112,12 @@ const fetchApplicantResumes = async (applicantId) => {
     setCurrentPage(1);
   };
 
-  const handleSearch = () => {
-    setCurrentPage(1);
-  };
+  const handleSearch = () => setCurrentPage(1);
 
   const handleSort = (key) => {
     setSortConfig(prev => ({
       key,
-      direction:
-        prev.key === key && prev.direction === 'asc'
-          ? 'desc'
-          : 'asc'
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   };
 
@@ -144,10 +144,11 @@ const fetchApplicantResumes = async (applicantId) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  /* Filter & sort only SCREENING candidates */
   const filteredAndSortedCandidates = useMemo(() => {
-    const filtered = filterCandidates(allCandidates, searchQuery, filters);
+    const filtered = filterCandidates(screeningCandidates, searchQuery, filters);
     return sortCandidates(filtered, sortConfig);
-  }, [allCandidates, searchQuery, filters, sortConfig]);
+  }, [screeningCandidates, searchQuery, filters, sortConfig]);
 
   const paginatedCandidates = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -171,9 +172,9 @@ const fetchApplicantResumes = async (applicantId) => {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-3">Candidates</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-3">Candidates (Screening)</h1>
         <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
-          Manage and review all candidate applications.
+          Review and manage candidates currently in the SCREENING stage.
         </p>
       </div>
 

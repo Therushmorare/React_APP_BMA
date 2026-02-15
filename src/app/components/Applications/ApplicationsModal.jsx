@@ -403,7 +403,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
             {/* Tabs */}
             <div>
               <div className="flex space-x-4 border-b border-gray-200 mb-4">
-                {["application", "score", "evaluation", "email", "documents"].map((tab) => (
+                {["application", "score", "documents"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
