@@ -25,6 +25,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInterviewSchedule, setShowInterviewSchedule] = useState(false);
+  const [showScreeningConfirm, setShowScreeningConfirm] = useState(false);
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("");
   const [loadingQuestions, setLoadingQuestions] = useState(false);
