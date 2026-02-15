@@ -26,103 +26,165 @@ const ReportsPage = () => {
   const fetchReportData = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const params = new URLSearchParams({
-        date_range: filters.dateRange,
-        chart_period: chartFilter,
-        ...(filters.department && { department: filters.department }),
-        ...(filters.position && { position: filters.position })
+      const base = "https://jellyfish-app-z83s2.ondigitalocean.app";
+
+      const [
+        applicantsRes,
+        interviewsRes,
+        postsRes,
+        totalAppliedRes,
+        totalPostsRes,
+        totalOpenRes
+      ] = await Promise.all([
+        fetch(`${base}/api/hr/all_applicants`),
+        fetch(`${base}/api/hr/allInterviews`),
+        fetch(`${base}/api/candidate/allPosts`),
+        fetch(`${base}/api/candidate/totalApplied`),
+        fetch(`${base}/api/candidate/totalJobPosts`),
+        fetch(`${base}/api/candidate/totalOpenPositions`)
+      ]);
+
+      if (
+        !applicantsRes.ok ||
+        !interviewsRes.ok ||
+        !postsRes.ok
+      ) {
+        throw new Error("Failed to fetch reports data");
+      }
+
+      const applicants = await applicantsRes.json();
+      const interviews = await interviewsRes.json();
+      const posts = await postsRes.json();
+      const totalApplied = await totalAppliedRes.json();
+      const totalPosts = await totalPostsRes.json();
+      const totalOpen = await totalOpenRes.json();
+
+      const totalApplications = Array.isArray(applicants)
+        ? applicants.length
+        : 0;
+
+      const totalInterviews = Array.isArray(interviews)
+        ? interviews.length
+        : 0;
+
+      const completedInterviews = interviews?.filter(
+        i => i.status?.toLowerCase() === "completed"
+      )?.length || 0;
+
+      const totalOffers = applicants?.filter(
+        a => a.status?.toLowerCase() === "offered"
+      )?.length || 0;
+
+      const totalHires = applicants?.filter(
+        a => a.status?.toLowerCase() === "hired"
+      )?.length || 0;
+
+      const applicationToInterview = totalApplications
+        ? Math.round((totalInterviews / totalApplications) * 100)
+        : 0;
+
+      const interviewToOffer = totalInterviews
+        ? Math.round((totalOffers / totalInterviews) * 100)
+        : 0;
+
+      const offerAcceptance = totalOffers
+        ? Math.round((totalHires / totalOffers) * 100)
+        : 0;
+
+      // ----------------------------
+      // KPI DATA
+      // ----------------------------
+      const kpiData = {
+        totalApplications,
+        applicationToInterview,
+        interviewToOffer,
+        offerAcceptance,
+        averageTimeToHire: 30 // until backend provides real metric
+      };
+
+      // ----------------------------
+      // FUNNEL DATA
+      // ----------------------------
+      const funnelData = [
+        { stage: "Applications", count: totalApplications, percentage: 100 },
+        {
+          stage: "Interviews",
+          count: totalInterviews,
+          percentage: applicationToInterview
+        },
+        {
+          stage: "Offers",
+          count: totalOffers,
+          percentage: interviewToOffer
+        },
+        {
+          stage: "Hires",
+          count: totalHires,
+          percentage: offerAcceptance
+        }
+      ];
+
+      // ----------------------------
+      // PERFORMANCE TABLE (Grouped by Position)
+      // ----------------------------
+      const performanceMap = {};
+
+      applicants?.forEach(app => {
+        const position = app.job_code || "Unknown";
+
+        if (!performanceMap[position]) {
+          performanceMap[position] = {
+            position,
+            applicants: 0,
+            interviews: 0,
+            offers: 0,
+            hires: 0
+          };
+        }
+
+        performanceMap[position].applicants++;
+
+        if (app.status?.toLowerCase() === "interviewed") {
+          performanceMap[position].interviews++;
+        }
+
+        if (app.status?.toLowerCase() === "offered") {
+          performanceMap[position].offers++;
+        }
+
+        if (app.status?.toLowerCase() === "hired") {
+          performanceMap[position].hires++;
+        }
       });
 
-      const response = await fetch(`/api/reports/recruitment-metrics?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch report data');
-      }
-      
-      const data = await response.json();
-      setReportData(data);
+      const performanceData = Object.values(performanceMap).map(p => {
+        const conversionRate = p.applicants
+          ? ((p.hires / p.applicants) * 100).toFixed(1)
+          : 0;
+
+        let performance = "Average";
+        if (conversionRate > 15) performance = "Excellent";
+        else if (conversionRate > 10) performance = "Good";
+        else if (conversionRate < 5) performance = "Bad";
+
+        return {
+          ...p,
+          conversionRate,
+          avgTimeToHire: 30,
+          performance
+        };
+      });
+
+      setReportData({
+        kpi_data: kpiData,
+        funnel_data: funnelData,
+        performance_data: performanceData
+      });
+
     } catch (err) {
       setError(err.message);
-      setReportData({
-        kpi_data: {
-          totalApplications: 2450,
-          applicationToInterview: 68,
-          interviewToOffer: 42,
-          offerAcceptance: 89,
-          averageTimeToHire: 28
-        },
-        funnel_data: [
-          { stage: 'Applications', count: 2450, percentage: 100 },
-          { stage: 'Screening', count: 1860, percentage: 76 },
-          { stage: 'Interviews', count: 1250, percentage: 51 },
-          { stage: 'Offers', count: 420, percentage: 17 },
-          { stage: 'Hires', count: 380, percentage: 15 }
-        ],
-        performance_data: [
-          {
-            position: "Software Engineer",
-            applicants: 890,
-            interviews: 340,
-            offers: 120,
-            hires: 110,
-            conversionRate: 12.4,
-            avgTimeToHire: 32,
-            performance: "Good"
-          },
-          {
-            position: "Product Manager", 
-            applicants: 560,
-            interviews: 280,
-            offers: 80,
-            hires: 70,
-            conversionRate: 12.5,
-            avgTimeToHire: 25,
-            performance: "Excellent"
-          },
-          {
-            position: "UI/UX Designer",
-            applicants: 420,
-            interviews: 180,
-            offers: 60,
-            hires: 50,
-            conversionRate: 11.9,
-            avgTimeToHire: 29,
-            performance: "Good"
-          },
-          {
-            position: "Data Analyst",
-            applicants: 350,
-            interviews: 120,
-            offers: 40,
-            hires: 30,
-            conversionRate: 8.6,
-            avgTimeToHire: 45,
-            performance: "Average"
-          },
-          {
-            position: "Marketing Specialist",
-            applicants: 230,
-            interviews: 80,
-            offers: 30,
-            hires: 20,
-            conversionRate: 8.7,
-            avgTimeToHire: 38,
-            performance: "Average"
-          },
-          {
-            position: "Sales Representative",
-            applicants: 180,
-            interviews: 50,
-            offers: 20,
-            hires: 10,
-            conversionRate: 5.6,
-            avgTimeToHire: 52,
-            performance: "Bad"
-          }
-        ]
-      });
     } finally {
       setLoading(false);
     }
