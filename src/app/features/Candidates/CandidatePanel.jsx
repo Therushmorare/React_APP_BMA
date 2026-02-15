@@ -10,6 +10,11 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [readyToInterview, setReadyToInterview] = useState(false);
+  const [interviewScheduled, setInterviewScheduled] = useState(false);
+  const [interviewCompleted, setInterviewCompleted] = useState(false);
+  const [onboarded, setOnboarded] = useState(false);
+
 
   const stages = [
     'Screening', 'Interview', 'Technical Test', 'Final Interview', 'Offer', 'Hired', 'Rejected'
@@ -58,6 +63,22 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
       'Rejected': 'bg-red-100 text-red-800'
     };
     return colors[stage] || 'bg-gray-100 text-gray-800';
+  };
+
+  const handleSetInterview = () => {
+  if (!readyToInterview) return; // safety check
+  setInterviewScheduled(true);
+
+    // simulate interview completion after some action
+    setTimeout(() => {
+      setInterviewCompleted(true);
+    }, 1000); // or replace with actual interview completion logic
+  };
+
+  const handleOnboardCandidate = () => {
+    if (!interviewCompleted) return;
+    setOnboarded(true);
+    console.log("Candidate onboarded!");
   };
 
   return (
@@ -338,12 +359,35 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-gray-200">
+          <div className="p-6 border-t border-gray-200 space-y-3">
+            {/* Ready to Interview */}
             <button
-              onClick={handleSubmit}
-              className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium"
+              onClick={() => setReadyToInterview(true)}
+              disabled={readyToInterview} // disable once clicked
+              className={`w-full py-3 rounded-lg font-medium transition-colors
+                ${readyToInterview ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-green-700 text-white hover:bg-green-800'}`}
             >
-              Submit Changes
+              Ready to Interview
+            </button>
+
+            {/* Set Interview */}
+            <button
+              onClick={handleSetInterview}
+              disabled={!readyToInterview || interviewScheduled} // enable only after ready
+              className={`w-full py-3 rounded-lg font-medium transition-colors
+                ${!readyToInterview || interviewScheduled ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+            >
+              {interviewScheduled ? 'Interview Scheduled' : 'Set Interview'}
+            </button>
+
+            {/* Onboard Candidate */}
+            <button
+              onClick={handleOnboardCandidate}
+              disabled={!interviewCompleted || onboarded} // enable only after interview
+              className={`w-full py-3 rounded-lg font-medium transition-colors
+                ${!interviewCompleted || onboarded ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
+            >
+              {onboarded ? 'Candidate Onboarded' : 'Onboard Candidate'}
             </button>
           </div>
         </div>
