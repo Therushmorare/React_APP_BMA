@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import EmployeeTableRow from '../../features/Employees/TableRow';
 import SearchAndFilters from '../../features/Employees/SearchAndFilter';
@@ -8,9 +8,7 @@ import Pagination from '../../features/Employees/Pagination';
 import NewEmployee from './NewEmployee';
 import EmployeeManagement from './EmployeeManagement';
 import Button from '../../features/Employees/Button';
-import { generateMockEmployees } from '@/app/utils/mockData';
 import { filterEmployees, paginateData } from '@/app/utils/dataProcessing';
-
 
 const ITEMS_PER_PAGE = 20;
 
@@ -26,7 +24,60 @@ const EmployeesPage = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isManagementOpen, setIsManagementOpen] = useState(false);
 
-  const allEmployees = useMemo(() => generateMockEmployees(5000), []);
+  const [allEmployees, setAllEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  //Map backend response → UI format
+  const mapEmployee = (employee) => {
+    const name = `${employee.first_name} ${employee.last_name}`;
+
+    return {
+      id: employee.employee_id,
+      employeeNumber: employee.employee_number,
+      name,
+      firstName: employee.first_name,
+      lastName: employee.last_name,
+      email: employee.email,
+      phone: employee.phone_number,
+      jobTitle: employee.job_title || 'N/A',
+      department: employee.department || 'N/A',
+      startDate: null, // Backend doesn't provide this
+      status: employee.status || 'Active',
+      employmentType: employee.employment_type,
+      description: employee.description,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=22c55e&color=ffffff`
+    };
+  };
+
+  //Fetch employees from backend
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await fetch(
+          "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/allEmployees",
+          {
+            method: "GET",
+            headers: { Accept: "application/json" }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch employees");
+        }
+
+        const data = await response.json();
+        const mappedEmployees = data.employee_data.map(mapEmployee);
+        setAllEmployees(mappedEmployees);
+
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
 
   const filteredEmployees = useMemo(() => {
     return filterEmployees(allEmployees, filters, searchQuery);
@@ -71,7 +122,8 @@ const EmployeesPage = () => {
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-800 mb-3">Employees</h1>
           <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
-            Manage employees and their information across all departments. Currently showing {filteredEmployees.length} of {allEmployees.length} employees.
+            Manage employees and their information across all departments. 
+            Currently showing {filteredEmployees.length} of {allEmployees.length} employees.
           </p>
         </div>
         <div className="ml-8">
@@ -95,40 +147,49 @@ const EmployeesPage = () => {
       />
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left p-4 font-semibold text-gray-700">Employee</th>
-                <th className="text-left p-4 font-semibold text-gray-700">Contact</th>
-                <th className="text-left p-4 font-semibold text-gray-700">Job Title</th>
-                <th className="text-left p-4 font-semibold text-gray-700">Department</th>
-                <th className="text-left p-4 font-semibold text-gray-700">Start Date</th>
-                <th className="text-left p-4 font-semibold text-gray-700">Status</th>
-                <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedEmployees.map((employee) => (
-                <EmployeeTableRow
-                  key={employee.id}
-                  employee={employee}
-                  onView={handleViewEmployee}
-                  onEdit={handleEditEmployee}
-                  onDelete={handleDeleteEmployee}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={filteredEmployees.length}
-          itemsPerPage={ITEMS_PER_PAGE}
-          onPageChange={handlePageChange}
-        />
+        {loading ? (
+          <div className="p-10 text-center text-gray-500">
+            Loading employees...
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left p-4 font-semibold text-gray-700">Employee</th>
+                    <th className="text-left p-4 font-semibold text-gray-700">Contact</th>
+                    <th className="text-left p-4 font-semibold text-gray-700">Job Title</th>
+                    <th className="text-left p-4 font-semibold text-gray-700">Department</th>
+                    <th className="text-left p-4 font-semibold text-gray-700">Start Date</th>
+                    <th className="text-left p-4 font-semibold text-gray-700">Status</th>
+                    <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedEmployees.map((employee) => (
+                    <EmployeeTableRow
+                      key={employee.id}
+                      employee={employee}
+                      onView={handleViewEmployee}
+                      onEdit={handleEditEmployee}
+                      onDelete={handleDeleteEmployee}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredEmployees.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={handlePageChange}
+            />
+          </>
+        )}
       </div>
 
       <NewEmployee isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />
