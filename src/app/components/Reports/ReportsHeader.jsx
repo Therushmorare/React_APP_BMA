@@ -16,7 +16,6 @@ const ReportsHeader = ({ error, exporting, handleExport }) => {
           </div>
         )}
       </div>
-
       <div className="ml-8 flex space-x-3">
         <button
           onClick={() => handleExport('excel')}

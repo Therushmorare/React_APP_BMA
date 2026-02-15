@@ -17,8 +17,8 @@ const ReportsPage = () => {
 
   const [chartFilter, setChartFilter] = useState('30');
   const [reportData, setReportData] = useState(null);
-  const [departments, setDepartments] = useState([]);   // ✅ ADDED
-  const [positions, setPositions] = useState([]);       // ✅ ADDED
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
@@ -199,6 +199,47 @@ const ReportsPage = () => {
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleExport = async (format = 'json') => {
+    if (!reportData) {
+      alert("No report data to export");
+      return;
+    }
+
+    setExporting(true);
+
+    try {
+      let blob;
+      let filename = `recruitment-report-${Date.now()}.${format}`;
+
+      if (format === 'json' || format === 'excel') {
+        const jsonStr = JSON.stringify(reportData, null, 2);
+        blob = new Blob([jsonStr], { type: "application/json" });
+      } else if (format === 'pdf') {
+        // Placeholder for PDF export logic
+        const jsonStr = JSON.stringify(reportData, null, 2);
+        blob = new Blob([jsonStr], { type: "application/pdf" });
+      } else {
+        alert("Unsupported format");
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Export failed. Please try again.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (loading) {
