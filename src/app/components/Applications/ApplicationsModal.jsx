@@ -35,6 +35,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [education, setEducation] = useState([]);
   const [experience, setExperience] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [eduOpen, setEduOpen] = useState(true);
   const [expOpen, setExpOpen] = useState(true);
 
@@ -129,6 +130,44 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
       loadScore();
     }
   }, [activeTab, application]);
+
+  useEffect(() => {
+    if (!application?.id) return;
+
+    const fetchDocuments = async () => {
+      try {
+        const response = await fetch(
+          "https://jellyfish-app-z83s2.ondigitalocean.app/api/admin/allDocuments",
+          {
+            method: "GET",
+            headers: { Accept: "application/json" }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch documents");
+        }
+
+        const data = await response.json();
+
+        //Filter documents for this applicant only
+        const applicantDocuments = data
+          .filter(doc => doc.applicant_id === application.id)
+          .map(doc => ({
+            name: doc.type || "Qualification Document",
+            url: doc.document
+          }));
+
+        setDocuments(applicantDocuments);
+
+      } catch (error) {
+        console.error("Error fetching documents:", error);
+        setDocuments([]);
+      }
+    };
+
+    fetchDocuments();
+  }, [application?.id]);
 
   useEffect(() => {
     if (application) {
@@ -455,8 +494,8 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
                 {activeTab === "documents" && (
                   <div className="space-y-2 text-sm">
-                    {application.documents?.length > 0 ? (
-                      application.documents.map((doc, idx) => (
+                    {documents.length > 0 ? (
+                      documents.map((doc, idx) => (
                         <a
                           key={idx}
                           href={doc.url}
