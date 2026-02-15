@@ -134,7 +134,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
                 </div>
               </div>
               
-              <div>
+              {/*<div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Move to Stage
                 </label>
@@ -148,7 +148,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
                     <option key={stage} value={stage}>{stage}</option>
                   ))}
                 </select>
-              </div>
+              </div>*/}
             </div>
 
             {/* Toggle Tabs */}
@@ -237,42 +237,52 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
 
               {/* Evaluation Tab */}
               {activeTab === 'evaluation' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={4}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-                      placeholder="Add your evaluation notes here..."
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rating
-                    </label>
-                    <div className="flex space-x-1">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <button
-                          key={star}
-                          onClick={() => setRating(star)}
-                          className={`p-1 transition-colors ${
-                            star <= rating ? 'text-yellow-500' : 'text-gray-300'
-                          }`}
-                        >
-                          <Star size={20} fill={star <= rating ? 'currentColor' : 'none'} />
-                        </button>
-                      ))}
-                      <span className="ml-2 text-sm text-gray-600">
-                        {rating > 0 ? `${rating}/5` : 'No rating'}
-                      </span>
-                    </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+                    placeholder="Add your evaluation notes here..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rating
+                  </label>
+                  <div className="flex space-x-1">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        onClick={() => setRating(star)}
+                        className={`p-1 transition-colors ${
+                          star <= rating ? 'text-yellow-500' : 'text-gray-300'
+                        }`}
+                      >
+                        <Star size={20} fill={star <= rating ? 'currentColor' : 'none'} />
+                      </button>
+                    ))}
+                    <span className="ml-2 text-sm text-gray-600">
+                      {rating > 0 ? `${rating}/5` : 'No rating'}
+                    </span>
                   </div>
                 </div>
+
+                {/* Submit Button */}
+                <div className="pt-4 border-t border-gray-200">
+                  <button
+                    onClick={handleSubmit}
+                    className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium"
+                  >
+                    Submit Changes
+                  </button>
+                </div>
+              </div>
               )}
 
               {/* Email Tab */}
