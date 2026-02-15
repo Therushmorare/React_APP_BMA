@@ -518,17 +518,22 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
           {/* Footer */}
           <div className="p-6 border-t border-gray-200 space-y-3">
             <div className="grid grid-cols-2 gap-3">
+              {/* Screen Applicant */}
               <button
-                onClick={() => setShowInterviewSchedule(true)}
-                className="w-full bg-white text-green-700 border border-green-700 py-2 rounded-lg hover:bg-green-50 transition-colors font-medium"
+                onClick={() => setShowScreeningConfirm(true)} // fixed typo
+                className="w-full flex items-center justify-center gap-2 bg-white text-green-700 border border-green-700 py-2 rounded-lg hover:bg-green-50 transition-colors font-medium"
               >
-                Schedule Interview
+                <Star size={16} /> {/* optional icon for clarity */}
+                Screen Applicant
               </button>
+
+              {/* Reject Applicant */}
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full bg-white text-red-600 border border-red-300 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                className="w-full flex items-center justify-center gap-2 bg-white text-red-600 border border-red-300 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium"
               >
-                Delete
+                <X size={16} /> {/* optional icon for clarity */}
+                Reject Applicant
               </button>
             </div>
           </div>
@@ -555,6 +560,34 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 className="flex-1 bg-red-600 text-white py-2 rounded-lg"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Screening Confirmation */}
+      {showScreeningConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+          <div className="bg-white rounded-lg p-6 space-y-6 w-full max-w-sm text-center shadow-lg animate-fade-in">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Confirm Screening
+            </h2>
+            <p className="text-gray-600">
+              Are you sure you want to mark this applicant for screening? This action cannot be undone.
+            </p>
+            <div className="flex justify-between gap-3">
+              <button
+                onClick={() => setShowScreeningConfirm(false)}
+                className="flex-1 bg-gray-200 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScreenApplicant}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                Confirm
               </button>
             </div>
           </div>
