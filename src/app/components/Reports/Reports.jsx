@@ -8,8 +8,6 @@ import KPICards from './ReportsCards';
 import RecruitmentFunnelChart from './Chart';
 import PerformanceTable from './ReportsTable';
 
-
-
 const ReportsPage = () => {
   const [filters, setFilters] = useState({
     dateRange: 'month',
@@ -19,6 +17,8 @@ const ReportsPage = () => {
 
   const [chartFilter, setChartFilter] = useState('30');
   const [reportData, setReportData] = useState(null);
+  const [departments, setDepartments] = useState([]);   // ✅ ADDED
+  const [positions, setPositions] = useState([]);       // ✅ ADDED
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
@@ -40,31 +40,72 @@ const ReportsPage = () => {
         }
       };
 
-      const applicants = await safeFetch(`${base}/api/hr/all_applicants`);
-      const interviews = await safeFetch(`${base}/api/hr/allInterviews`);
-      const posts = await safeFetch(`${base}/api/candidate/allPosts`);
-      const totalApplied = await safeFetch(`${base}/api/candidate/totalApplied`);
-      const totalPosts = await safeFetch(`${base}/api/candidate/totalJobPosts`);
-      const totalOpen = await safeFetch(`${base}/api/candidate/totalOpenPositions`);
+      const applicantsRaw = await safeFetch(`${base}/api/hr/all_applicants`);
+      const interviewsRaw = await safeFetch(`${base}/api/hr/allInterviews`);
+
+      const applicants = Array.isArray(applicantsRaw)
+        ? applicantsRaw
+        : applicantsRaw?.data || [];
+
+      const interviews = Array.isArray(interviewsRaw)
+        ? interviewsRaw
+        : interviewsRaw?.data || [];
 
       console.log("Applicants:", applicants);
       console.log("Interviews:", interviews);
 
-      const totalApplications = Array.isArray(applicants)
-        ? applicants.length
-        : applicants?.total || 0;
+      // ✅ BUILD DYNAMIC FILTER OPTIONS
+      if (Array.isArray(applicants)) {
+        const uniqueDepartments = [
+          ...new Set(applicants.map(a => a.department).filter(Boolean))
+        ];
 
-      const totalInterviews = Array.isArray(interviews)
-        ? interviews.length
-        : 0;
+        const uniquePositions = [
+          ...new Set(
+            applicants.map(a => a.job_code || a.position).filter(Boolean)
+          )
+        ];
 
-      const totalOffers = applicants?.filter?.(
+        setDepartments(uniqueDepartments);
+        setPositions(uniquePositions);
+      }
+
+      // ✅ APPLY FILTERS
+      let filteredApplicants = [...applicants];
+
+      if (filters.department) {
+        filteredApplicants = filteredApplicants.filter(
+          a =>
+            a.department?.toLowerCase() ===
+            filters.department.toLowerCase()
+        );
+      }
+
+      if (filters.position) {
+        filteredApplicants = filteredApplicants.filter(
+          a =>
+            a.job_code?.toLowerCase() ===
+              filters.position.toLowerCase() ||
+            a.position?.toLowerCase() ===
+              filters.position.toLowerCase()
+        );
+      }
+
+      const totalApplications = filteredApplicants.length;
+
+      const totalInterviews = interviews.filter(interview =>
+        filteredApplicants.some(
+          app => app.id === interview.applicant_id
+        )
+      ).length;
+
+      const totalOffers = filteredApplicants.filter(
         a => a.status?.toLowerCase() === "offered"
-      )?.length || 0;
+      ).length;
 
-      const totalHires = applicants?.filter?.(
+      const totalHires = filteredApplicants.filter(
         a => a.status?.toLowerCase() === "hired"
-      )?.length || 0;
+      ).length;
 
       const applicationToInterview = totalApplications
         ? Math.round((totalInterviews / totalApplications) * 100)
@@ -95,32 +136,30 @@ const ReportsPage = () => {
 
       const performanceMap = {};
 
-      if (Array.isArray(applicants)) {
-        applicants.forEach(app => {
-          const position = app.job_code || "Unknown";
+      filteredApplicants.forEach(app => {
+        const position = app.job_code || app.position || "Unknown";
 
-          if (!performanceMap[position]) {
-            performanceMap[position] = {
-              position,
-              applicants: 0,
-              interviews: 0,
-              offers: 0,
-              hires: 0
-            };
-          }
+        if (!performanceMap[position]) {
+          performanceMap[position] = {
+            position,
+            applicants: 0,
+            interviews: 0,
+            offers: 0,
+            hires: 0
+          };
+        }
 
-          performanceMap[position].applicants++;
+        performanceMap[position].applicants++;
 
-          if (app.status?.toLowerCase() === "interviewed")
-            performanceMap[position].interviews++;
+        if (app.status?.toLowerCase() === "interviewed")
+          performanceMap[position].interviews++;
 
-          if (app.status?.toLowerCase() === "offered")
-            performanceMap[position].offers++;
+        if (app.status?.toLowerCase() === "offered")
+          performanceMap[position].offers++;
 
-          if (app.status?.toLowerCase() === "hired")
-            performanceMap[position].hires++;
-        });
-      }
+        if (app.status?.toLowerCase() === "hired")
+          performanceMap[position].hires++;
+      });
 
       const performanceData = Object.values(performanceMap).map(p => {
         const conversionRate = p.applicants
@@ -162,56 +201,8 @@ const ReportsPage = () => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleExport = async (format = 'pdf') => {
-    setExporting(true);
-    
-    try {
-      const params = new URLSearchParams({
-        ...filters,
-        format,
-        chart_period: chartFilter
-      });
-      
-      const response = await fetch(`/api/reports/export/recruitment-summary?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `recruitment-report-${Date.now()}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Export failed:', err);
-      alert('Export failed. Please try again.');
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const getPerformanceColor = (performance) => {
-    switch (performance?.toLowerCase()) {
-      case 'excellent':
-        return 'bg-green-100 text-green-800';
-      case 'good':
-        return 'bg-blue-100 text-blue-800';
-      case 'average':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'bad':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (loading) {
-    return <LoadingState  />;
+    return <LoadingState />;
   }
 
   return (
@@ -227,6 +218,8 @@ const ReportsPage = () => {
         handleFilterChange={handleFilterChange}
         fetchReportData={fetchReportData}
         setFilters={setFilters}
+        departments={departments}
+        positions={positions}
       />
 
       {reportData && (
@@ -248,6 +241,5 @@ const ReportsPage = () => {
     </div>
   );
 };
-
 
 export default ReportsPage;

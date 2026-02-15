@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, Users, Briefcase } from 'lucide-react';
 
-const ReportsFilters = ({ filters, handleFilterChange, fetchReportData, setFilters }) => {
+const ReportsFilters = ({ filters, handleFilterChange, fetchReportData, setFilters, departments = [], positions = [] }) => {
   const handleClearFilters = () => {
     setFilters({ dateRange: 'month', department: '', position: '' });
   };
@@ -9,6 +9,7 @@ const ReportsFilters = ({ filters, handleFilterChange, fetchReportData, setFilte
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Date Range */}
         <div className="flex flex-col">
           <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
             <Calendar size={16} className="mr-1" />
@@ -27,6 +28,7 @@ const ReportsFilters = ({ filters, handleFilterChange, fetchReportData, setFilte
           </select>
         </div>
 
+        {/* Department */}
         <div className="flex flex-col">
           <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
             <Users size={16} className="mr-1" />
@@ -38,15 +40,15 @@ const ReportsFilters = ({ filters, handleFilterChange, fetchReportData, setFilte
             className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
           >
             <option value="">All departments</option>
-            <option value="engineering">Engineering</option>
-            <option value="product">Product</option>
-            <option value="design">Design</option>
-            <option value="data">Data & Analytics</option>
-            <option value="marketing">Marketing</option>
-            <option value="sales">Sales</option>
+            {departments.map((dept, idx) => (
+              <option key={idx} value={dept.toLowerCase()}>
+                {dept}
+              </option>
+            ))}
           </select>
         </div>
 
+        {/* Position */}
         <div className="flex flex-col">
           <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
             <Briefcase size={16} className="mr-1" />
@@ -58,16 +60,16 @@ const ReportsFilters = ({ filters, handleFilterChange, fetchReportData, setFilte
             className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
           >
             <option value="">All positions</option>
-            <option value="software-engineer">Software Engineer</option>
-            <option value="product-manager">Product Manager</option>
-            <option value="designer">UI/UX Designer</option>
-            <option value="data-analyst">Data Analyst</option>
-            <option value="marketing">Marketing Specialist</option>
-            <option value="sales">Sales Representative</option>
+            {positions.map((pos, idx) => (
+              <option key={idx} value={pos.toLowerCase().replace(/\s+/g, '-')}>
+                {pos}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
+      {/* Buttons */}
       <div className="mt-6 flex justify-between items-center">
         <button
           onClick={handleClearFilters}
