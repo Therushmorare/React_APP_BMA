@@ -39,15 +39,86 @@ const Interviews = () => {
     setError(null);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const data = generateSampleInterviews(page, INTERVIEWS_PER_PAGE, search, filterParams);
+      const response = await fetch(
+        "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/allInterviews",
+        {
+          method: "GET",
+          headers: { Accept: "application/json" }
+        }
+      );
 
-      setInterviews(data.interviews);
-      setTotalInterviews(data.total);
-      setTotalPages(data.totalPages);
+      if (response.status === 404) {
+        // No interviews exist
+        setInterviews([]);
+        setTotalInterviews(0);
+        setTotalPages(1);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch interviews");
+      }
+
+      const rawData = await response.json();
+
+      // Backend safety check
+      if (!Array.isArray(rawData)) {
+        setInterviews([]);
+        setTotalInterviews(0);
+        setTotalPages(1);
+        return;
+      }
+
+      //Map backend → frontend structure
+      const mapped = rawData.map(item => ({
+        id: item.interview_id,
+        name: item.candidate_name || "Unknown Candidate",
+        email: item.email || "N/A",
+        phone: item.phone || "N/A",
+        position: item.job_code || "N/A",
+        date: item.date,
+        time: item.time,
+        status: item.status || "Upcoming",
+        interviewer: item.approved_by || "HR",
+        type: "External",
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          item.candidate_name || "Candidate"
+        )}&background=22c55e&color=ffffff&size=128`,
+        notes: item.details || "",
+        resumeUrl: ""
+      }));
+
+      //filtering
+      let filtered = mapped;
+
+      if (search) {
+        filtered = filtered.filter(interview =>
+          interview.name.toLowerCase().includes(search.toLowerCase()) ||
+          interview.position.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      if (filterParams.status) {
+        filtered = filtered.filter(i => i.status === filterParams.status);
+      }
+
+      if (filterParams.type) {
+        filtered = filtered.filter(i => i.type === filterParams.type);
+      }
+
+      if (filterParams.position) {
+        filtered = filtered.filter(i => i.position === filterParams.position);
+      }
+
+      // pagination
+      const startIndex = (page - 1) * INTERVIEWS_PER_PAGE;
+      const endIndex = startIndex + INTERVIEWS_PER_PAGE;
+
+      setInterviews(filtered.slice(startIndex, endIndex));
+      setTotalInterviews(filtered.length);
+      setTotalPages(Math.max(1, Math.ceil(filtered.length / INTERVIEWS_PER_PAGE)));
       setCurrentPage(page);
-      
+
     } catch (err) {
       setError(err.message);
     } finally {
