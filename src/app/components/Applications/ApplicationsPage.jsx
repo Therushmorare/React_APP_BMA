@@ -107,12 +107,37 @@ export default function ApplicationsPage() {
     let filtered = applications;
 
     Object.keys(newFilters).forEach((k) => {
-      if (newFilters[k]) {
-        filtered = filtered.filter((app) => {
-          const fieldValue = app[k]?.toString().toLowerCase() || "";
-          return fieldValue.includes(newFilters[k].toLowerCase());
-        });
-      }
+      if (!newFilters[k]) return;
+
+      filtered = filtered.filter((app) => {
+        const filterValue = newFilters[k].toLowerCase();
+
+        if (k === 'firstName') {
+          return app.candidateName.toLowerCase().split(' ')[0].includes(filterValue);
+        }
+
+        if (k === 'lastName') {
+          return app.candidateName.toLowerCase().split(' ')[1]?.includes(filterValue);
+        }
+
+        if (k === 'phoneNumber') {
+          return (app.phone || '').toLowerCase().includes(filterValue);
+        }
+
+        if (k === 'email') {
+          return (app.email || '').toLowerCase().includes(filterValue);
+        }
+
+        if (k === 'status') {
+          return (app.status || '').toLowerCase() === filterValue;
+        }
+
+        if (k === 'applicationId') {
+          return (app.applicationId || '').toLowerCase().includes(filterValue);
+        }
+
+        return true;
+      });
     });
 
     setFilteredApplications(filtered);
@@ -121,11 +146,12 @@ export default function ApplicationsPage() {
 
   const handleClearFilters = () => {
     setFilters({
-      department: "",
-      position: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      phoneNumber: "",
       status: "",
-      type: "",
-      experience: "",
+      applicationId: "",
     });
     setSearchQuery("");
     setFilteredApplications(applications);
@@ -204,7 +230,7 @@ export default function ApplicationsPage() {
         onClearFilters={handleClearFilters}
         filterKeys={["department", "position", "status", "type", "experience", "location", "qualification", "salary"]}
       />
-      
+
       {/* Table */}
       <ApplicationsTable
         applications={currentApplications}

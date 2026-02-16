@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Calendar, Users, Briefcase, Filter, Clock, MapPin, GraduationCap, DollarSign } from "lucide-react";
 
 const APPLICATIONS_PER_PAGE = 30;
 
@@ -19,71 +18,67 @@ const ApplicationsFilter = ({
   return (
     <div>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4">
-          {/* Date Range */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          {/* First Name */}
           <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Calendar size={16} className="mr-1" /> Date Range
+            <label className="text-xs font-medium text-gray-700 mb-2">
+              First Name
             </label>
-            <select
-              value={filters.dateRange || ""}
-              onChange={(e) => handleChange("dateRange", e.target.value)}
+            <input
+              type="text"
+              value={filters.firstName || ""}
+              onChange={(e) => handleChange("firstName", e.target.value)}
+              placeholder="e.g., John"
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-            >
-              <option value="">All dates</option>
-              <option value="today">Today</option>
-              <option value="week">This week</option>
-              <option value="month">This month</option>
-              <option value="quarter">This quarter</option>
-              <option value="year">This year</option>
-            </select>
+            />
           </div>
 
-          {/* Department */}
+          {/* Last Name */}
           <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Users size={16} className="mr-1" /> Department
+            <label className="text-xs font-medium text-gray-700 mb-2">
+              Last Name
             </label>
-            <select
-              value={filters.department || ""}
-              onChange={(e) => handleChange("department", e.target.value)}
+            <input
+              type="text"
+              value={filters.lastName || ""}
+              onChange={(e) => handleChange("lastName", e.target.value)}
+              placeholder="e.g., Doe"
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-            >
-              <option value="">All departments</option>
-              <option value="engineering">Engineering</option>
-              <option value="product">Product</option>
-              <option value="design">Design</option>
-              <option value="data & analytics">Data & Analytics</option>
-              <option value="marketing">Marketing</option>
-              <option value="sales">Sales</option>
-              <option value="finance">Finance</option>
-            </select>
+            />
           </div>
 
-          {/* Position */}
+          {/* Email */}
           <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Briefcase size={16} className="mr-1" /> Position
+            <label className="text-xs font-medium text-gray-700 mb-2">
+              Email
             </label>
-            <select
-              value={filters.position || ""}
-              onChange={(e) => handleChange("position", e.target.value)}
+            <input
+              type="text"
+              value={filters.email || ""}
+              onChange={(e) => handleChange("email", e.target.value)}
+              placeholder="e.g., john.doe@email.com"
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-            >
-              <option value="">All positions</option>
-              <option value="software engineer">Software Engineer</option>
-              <option value="product manager">Product Manager</option>
-              <option value="designer">UI/UX Designer</option>
-              <option value="data analyst">Data Analyst</option>
-              <option value="marketing">Marketing Specialist</option>
-              <option value="sales">Sales Representative</option>
-            </select>
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div className="flex flex-col">
+            <label className="text-xs font-medium text-gray-700 mb-2">
+              Phone Number
+            </label>
+            <input
+              type="text"
+              value={filters.phoneNumber || ""}
+              onChange={(e) => handleChange("phoneNumber", e.target.value)}
+              placeholder="e.g., +27123456789"
+              className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+            />
           </div>
 
           {/* Status */}
           <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 mr-1"></div> Status
+            <label className="text-xs font-medium text-gray-700 mb-2">
+              Status
             </label>
             <select
               value={filters.status || ""}
@@ -100,80 +95,16 @@ const ApplicationsFilter = ({
             </select>
           </div>
 
-          {/* Type */}
+          {/* Application ID */}
           <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Filter size={16} className="mr-1" /> Type
-            </label>
-            <select
-              value={filters.type || ""}
-              onChange={(e) => handleChange("type", e.target.value)}
-              className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-            >
-              <option value="">All types</option>
-              <option value="internal">Internal</option>
-              <option value="external">External</option>
-            </select>
-          </div>
-
-          {/* Experience */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Clock size={16} className="mr-1" /> Min Experience
-            </label>
-            <select
-              value={filters.experience || ""}
-              onChange={(e) => handleChange("experience", e.target.value)}
-              className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-            >
-              <option value="">Any experience</option>
-              <option value="0">0+ years</option>
-              <option value="1">1+ years</option>
-              <option value="2">2+ years</option>
-              <option value="3">3+ years</option>
-              <option value="5">5+ years</option>
-              <option value="10">10+ years</option>
-            </select>
-          </div>
-
-          {/* Location */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <MapPin size={16} className="mr-1" /> Location
+            <label className="text-xs font-medium text-gray-700 mb-2">
+              Application ID
             </label>
             <input
               type="text"
-              value={filters.location || ""}
-              onChange={(e) => handleChange("location", e.target.value)}
-              placeholder="e.g., Midrand"
-              className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-            />
-          </div>
-
-          {/* Qualification */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <GraduationCap size={16} className="mr-1" /> Qualification
-            </label>
-            <input
-              type="text"
-              value={filters.qualification || ""}
-              onChange={(e) => handleChange("qualification", e.target.value)}
-              placeholder="e.g., BSc Computer Science"
-              className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-            />
-          </div>
-
-          {/* Salary */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <DollarSign size={16} className="mr-1" /> Min Salary
-            </label>
-            <input
-              type="number"
-              value={filters.salary || ""}
-              onChange={(e) => handleChange("salary", e.target.value)}
-              placeholder="e.g., 100000"
+              value={filters.applicationId || ""}
+              onChange={(e) => handleChange("applicationId", e.target.value)}
+              placeholder="e.g., APP12345"
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
             />
           </div>
