@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import JobPostHeader from './JobHeader';
 import JobsGrid from './JobsGrid';
 import Modal from '../Recruitment/Modal'; 
@@ -23,75 +23,72 @@ const JobPosts = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
 
-  const [jobs, setJobs] = useState([
-    {
-      id: 1,
-      title: "Senior Software Engineer",
-      department: "Engineering",
-      status: "Active",
-      applicants: 24,
-      createdAt: "2025-09-10",
-      type: "Full-time",
-      location: "Johannesburg, South Africa",
-      description: "We are looking for a senior software engineer to join our growing team..."
-    },
-    {
-      id: 2,
-      title: "Product Manager",
-      department: "Product",
-      status: "Draft",
-      applicants: 19,
-      createdAt: "2025-09-15",
-      type: "Full-time",
-      location: "Cape Town, South Africa",
-      description: "Lead product strategy and development for our core platform..."
-    },
-    {
-      id: 3,
-      title: "UX/UI Designer",
-      department: "Design",
-      status: "Active",
-      applicants: 18,
-      createdAt: "2025-09-08",
-      type: "Contract",
-      location: "Remote",
-      description: "Create beautiful and intuitive user experiences for our products..."
-    },
-    {
-      id: 4,
-      title: "Data Analyst",
-      department: "Analytics",
-      status: "Paused",
-      applicants: 12,
-      createdAt: "2025-09-05",
-      type: "Full-time",
-      location: "Durban, South Africa",
-      description: "Analyze data to drive business insights and decision-making..."
-    },
-    {
-      id: 5,
-      title: "Marketing Specialist",
-      department: "Marketing",
-      status: "Active",
-      applicants: 31,
-      createdAt: "2025-09-01",
-      type: "Full-time",
-      location: "Johannesburg, South Africa",
-      description: "Develop and execute marketing campaigns to grow our brand..."
-    },
-    {
-      id: 6,
-      title: "Sales Representative",
-      department: "Sales",
-      status: "Closed",
-      applicants: 45,
-      createdAt: "2025-08-28",
-      type: "Full-time",
-      location: "Pretoria, South Africa",
-      description: "Drive sales growth and build relationships with enterprise clients..."
-    }
-  ]);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  /* =========================
+     FETCH JOBS FROM API
+  ========================== */
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          'https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/allPosts'
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch jobs');
+        }
+
+        const data = await response.json();
+
+        const formattedJobs = data.jobs.map((job) => ({
+          id: job.job_id,
+          title: job.expected_candidates || job.job_title,
+          department: job.department,
+          status: formatStatus(job.status),
+          applicants: job.quantity || 0,
+          createdAt: job.created_at,
+          type: job.employment_type?.replace('_', '-'),
+          location: job.office,
+          description: job.job_description,
+        }));
+
+        setJobs(formattedJobs);
+      } catch (err) {
+        console.error(err);
+        setError('Unable to load jobs.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  /* =========================
+     STATUS NORMALIZER
+  ========================== */
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'REVIEW':
+        return 'Draft';
+      case 'OPEN':
+        return 'Active';
+      case 'CLOSED':
+        return 'Closed';
+      default:
+        return 'Paused';
+    }
+  };
+
+  /* =========================
+     EXISTING LOGIC (UNCHANGED)
+  ========================== */
   const handleSearch = () => {
     console.log('Searching for:', searchQuery, 'with filters:', filters);
   };
@@ -116,7 +113,6 @@ const JobPosts = () => {
       location: newJob.locationType === 'onsite' ? newJob.city : newJob.locationType
     };
     setJobs([jobWithLocation, ...jobs]);
-    console.log('New job added:', jobWithLocation);
   };
 
   const handleJobCardClick = (job) => {
@@ -131,7 +127,6 @@ const JobPosts = () => {
     setJobs(jobs.map(job => 
       job.id === selectedJob.id ? updatedJob : job
     ));
-    console.log('Job updated:', updatedJob);
   };
 
   const getStatusColor = (status) => {
@@ -158,6 +153,9 @@ const JobPosts = () => {
         setModalType={setModalType}
         setShowModal={setShowModal}
       />
+
+      {loading && <p className="text-gray-500 mb-4">Loading jobs...</p>}
+      {error && <p className="text-red-500 mb-4">{error}</p>}
 
       <JobsGrid
         jobs={jobs}
