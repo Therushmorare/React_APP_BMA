@@ -46,17 +46,26 @@ const JobPosts = () => {
 
         const data = await response.json();
 
-        const formattedJobs = data.jobs.map((job) => ({
-          id: job.job_id,
-          title: job.expected_candidates || job.job_title,
-          department: job.department,
-          status: formatStatus(job.status),
-          applicants: job.quantity || 0,
-          createdAt: job.created_at,
-          type: job.employment_type?.replace('_', '-'),
-          location: job.office,
-          description: job.job_description,
-        }));
+        const formattedJobs = data.jobs.map((job) => {
+          const filter = job.filters?.[0] || {};
+
+          return {
+            id: job.job_id,
+            title: job.expected_candidates || job.job_title,
+            department: job.department,
+            status: formatStatus(job.status),
+            applicants: job.quantity || 0,
+            createdAt: job.created_at,
+            type: job.employment_type?.replace('_', '-'),
+            location: job.office,
+            description: job.job_description,
+            closing: job.closing_date,
+
+            experience: filter.experience,
+            expectedQualification: filter.expected_qualification,
+            salary: filter.salary
+          };
+        });
 
         setJobs(formattedJobs);
       } catch (err) {

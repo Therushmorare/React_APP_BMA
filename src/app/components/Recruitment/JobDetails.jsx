@@ -24,13 +24,12 @@ const JobDetailsModal = ({ selectedJob, getStatusColor }) => {
       <div>
         <h4 className="font-medium mb-2">Requirements</h4>
         <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Bachelor's degree in relevant field</li>
-          <li>• 3+ years of experience</li>
-          <li>• Strong communication skills</li>
-          <li>• Team player mentality</li>
+          <li>• {selectedJob.expectedQualification}</li>
+          <li>• {selectedJob.experience}+ years of experience</li>
+          <li>• Employment type: {selectedJob.type}</li>
         </ul>
       </div>
-      <div>
+      {/*<div>
         <h4 className="font-medium mb-2">Responsibilities</h4>
         <ul className="text-sm text-gray-600 space-y-1">
           <li>• Develop and maintain job postings</li>
@@ -38,20 +37,14 @@ const JobDetailsModal = ({ selectedJob, getStatusColor }) => {
           <li>• Screen and interview candidates</li>
           <li>• Provide feedback and recommendations</li>
         </ul>
-      </div>
+      </div>*/}
       <div className="text-sm text-gray-600">
         <h4 className="font-medium mb-2">Salary Range</h4>
         <p className="text-sm text-gray-600">
-          {selectedJob.salaryRange ? 
-            (typeof selectedJob.salaryRange === 'object' ? 
-              `${selectedJob.salaryRange.currency} ${selectedJob.salaryRange.min} - ${selectedJob.salaryRange.max}` : 
-              selectedJob.salaryRange
-            ) : 
-            'Not specified'
-          }
+          {selectedJob.salary}
         </p>
       </div>
-      <div>
+      {/*<div>
         <h4 className="font-medium mb-2">Benefits</h4>
         <ul className="text-sm text-gray-600 space-y-1">
           <li>• Health insurance</li>
@@ -59,12 +52,12 @@ const JobDetailsModal = ({ selectedJob, getStatusColor }) => {
           <li>• Retirement plan</li>
           <li>• Professional development opportunities</li>
         </ul>
-      </div>
+      </div>*/}
       <div className="text-sm text-gray-600">
         <h4 className="font-medium mb-2">Application Deadline</h4>
         <p className="text-sm text-gray-600">
-          {selectedJob.applicationDeadline ? 
-            new Date(selectedJob.applicationDeadline).toLocaleDateString() : 
+          {selectedJob.closing ? 
+            new Date(selectedJob.closing).toLocaleDateString() : 
             'No deadline set'
           }
         </p>
