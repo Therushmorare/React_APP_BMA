@@ -43,18 +43,28 @@ export default function ApplicationsPage() {
           ? data
           : Object.values(data);
 
-        const formatted = applicantsArray.map((item) => ({
-          id: item.applicant_id ?? "",
-          job_id: item.job_id ?? "",
-          applicationId: item.application_code ?? "",
-          candidateName: `${item.first_name ?? ""} ${item.last_name ?? ""}`,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            (item.first_name ?? "") + " " + (item.last_name ?? "")
-          )}&background=22c55e&color=ffffff&size=128`,
-          email: item.email ?? "N/A",
-          phone: item.phone_number ?? "N/A",
-          status: item.application_status ?? "Pending",
-        }));
+        const formatted = applicantsArray.map((item) => {
+          const filter = item.filters?.[0] || {}; // take the first filter object
+          return {
+            id: item.applicant_id ?? "",
+            job_id: item.job_id ?? "",
+            applicationId: item.application_code ?? "",
+            candidateName: `${item.first_name ?? ""} ${item.last_name ?? ""}`,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              (item.first_name ?? "") + " " + (item.last_name ?? "")
+            )}&background=22c55e&color=ffffff&size=128`,
+            email: item.email ?? "N/A",
+            phone: item.phone_number ?? "N/A",
+            status: item.application_status ?? "Pending",
+            department: item.department ?? "",
+            position: item.position ?? "",
+            type: item.employment_type ?? "",
+            experience: filter.experience ?? "",
+            location: filter.location ?? "",
+            qualification: filter.expected_qualification ?? "",
+            salary: filter.salary ?? "",
+          };
+        });
 
         console.log("Formatted applicants:", formatted);
 
@@ -95,14 +105,18 @@ export default function ApplicationsPage() {
     setFilters(newFilters);
 
     let filtered = applications;
+
     Object.keys(newFilters).forEach((k) => {
       if (newFilters[k]) {
-        filtered = filtered.filter((app) =>
-          app[k]?.toLowerCase().includes(newFilters[k].toLowerCase())
-        );
+        filtered = filtered.filter((app) => {
+          const fieldValue = app[k]?.toString().toLowerCase() || "";
+          return fieldValue.includes(newFilters[k].toLowerCase());
+        });
       }
     });
+
     setFilteredApplications(filtered);
+    setCurrentPage(1);
   };
 
   const handleClearFilters = () => {
@@ -188,8 +202,9 @@ export default function ApplicationsPage() {
         filters={filters}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
+        filterKeys={["department", "position", "status", "type", "experience", "location", "qualification", "salary"]}
       />
-
+      
       {/* Table */}
       <ApplicationsTable
         applications={currentApplications}

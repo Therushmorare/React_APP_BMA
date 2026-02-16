@@ -26,6 +26,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInterviewSchedule, setShowInterviewSchedule] = useState(false);
   const [showScreeningConfirm, setShowScreeningConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("");
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -196,6 +197,100 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
       });
     setShowInterviewSchedule(false);
     onClose();
+  };
+
+  const handleScreenApplicant = async () => {
+    if (!application?.id) {
+      console.warn("No application selected.");
+      return;
+    }
+
+    const employeeId = sessionStorage.getItem('user_id');
+    const candidateId = application.id;
+
+    if (!employeeId) {
+      console.error("Employee ID not found in sessionStorage.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/updateApplicationStatus/${employeeId}/${candidateId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            employee_id: employeeId,
+            candidate_id: candidateId,
+            status: "SCREENED", // change this dynamically if needed
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update application status: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("Application updated successfully:", data);
+
+    } catch (error) {
+      console.error("Error updating application:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectApplication = async () => {
+    if (!application?.id) {
+      console.warn("No application selected.");
+      return;
+    }
+
+    const employeeId = sessionStorage.getItem('user_id');
+    const candidateId = application.id;
+
+    if (!employeeId) {
+      console.error("Employee ID not found in sessionStorage.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/updateApplicationStatus/${employeeId}/${candidateId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            employee_id: employeeId,
+            candidate_id: candidateId,
+            status: "REJECTED", // change this dynamically if needed
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update application status: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("Application updated successfully:", data);
+
+    } catch (error) {
+      console.error("Error updating application:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -530,7 +625,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
               {/* Reject Applicant */}
               <button
-                onClick={() => setShowDeleteConfirm(true)}
+                onClick={() => setShowRejectConfirm(true)}
                 className="w-full flex items-center justify-center gap-2 bg-white text-red-600 border border-red-300 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium"
               >
                 <X size={16} /> {/* optional icon for clarity */}
@@ -561,6 +656,31 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
                 className="flex-1 bg-red-600 text-white py-2 rounded-lg"
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Confirmation Modal */}
+      {showRejectConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-6 space-y-4 w-80 text-center">
+            <p className="text-gray-800 font-medium">
+              Are you sure you want to reject this application?
+            </p>
+            <div className="flex justify-between space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 bg-gray-200 py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectApplication}
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg"
+              >
+                Confirm
               </button>
             </div>
           </div>

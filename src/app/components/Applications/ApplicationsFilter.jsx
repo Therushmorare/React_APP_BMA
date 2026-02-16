@@ -1,34 +1,33 @@
-"use client"
+"use client";
 
-import React from 'react';
-import { Calendar, Users, Briefcase, Filter, Clock } from 'lucide-react';
+import React from "react";
+import { Calendar, Users, Briefcase, Filter, Clock, MapPin, GraduationCap, DollarSign } from "lucide-react";
 
 const APPLICATIONS_PER_PAGE = 30;
 
-const ApplicationsFilter = ({ 
-  filters, 
-  onFilterChange, 
+const ApplicationsFilter = ({
+  filters,
+  onFilterChange,
   onClearFilters,
-  currentPage, 
-  totalApplications 
+  currentPage,
+  totalApplications,
 }) => {
-  
-  const handleFilterChange = (key, value) => {
+  const handleChange = (key, value) => {
     onFilterChange(key, value);
   };
 
   return (
     <div>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-4">
+          {/* Date Range */}
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Calendar size={16} className="mr-1" />
-              Date Range
+              <Calendar size={16} className="mr-1" /> Date Range
             </label>
             <select
-              value={filters.dateRange}
-              onChange={(e) => handleFilterChange('dateRange', e.target.value)}
+              value={filters.dateRange || ""}
+              onChange={(e) => handleChange("dateRange", e.target.value)}
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
             >
               <option value="">All dates</option>
@@ -40,14 +39,14 @@ const ApplicationsFilter = ({
             </select>
           </div>
 
+          {/* Department */}
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Users size={16} className="mr-1" />
-              Department
+              <Users size={16} className="mr-1" /> Department
             </label>
             <select
-              value={filters.department}
-              onChange={(e) => handleFilterChange('department', e.target.value)}
+              value={filters.department || ""}
+              onChange={(e) => handleChange("department", e.target.value)}
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
             >
               <option value="">All departments</option>
@@ -61,14 +60,14 @@ const ApplicationsFilter = ({
             </select>
           </div>
 
+          {/* Position */}
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Briefcase size={16} className="mr-1" />
-              Position
+              <Briefcase size={16} className="mr-1" /> Position
             </label>
             <select
-              value={filters.position}
-              onChange={(e) => handleFilterChange('position', e.target.value)}
+              value={filters.position || ""}
+              onChange={(e) => handleChange("position", e.target.value)}
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
             >
               <option value="">All positions</option>
@@ -81,14 +80,14 @@ const ApplicationsFilter = ({
             </select>
           </div>
 
+          {/* Status */}
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 mr-1"></div>
-              Status
+              <div className="w-4 h-4 rounded-full bg-green-500 mr-1"></div> Status
             </label>
             <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              value={filters.status || ""}
+              onChange={(e) => handleChange("status", e.target.value)}
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
             >
               <option value="">All statuses</option>
@@ -101,14 +100,14 @@ const ApplicationsFilter = ({
             </select>
           </div>
 
+          {/* Type */}
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Filter size={16} className="mr-1" />
-              Type
+              <Filter size={16} className="mr-1" /> Type
             </label>
             <select
-              value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
+              value={filters.type || ""}
+              onChange={(e) => handleChange("type", e.target.value)}
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
             >
               <option value="">All types</option>
@@ -117,14 +116,14 @@ const ApplicationsFilter = ({
             </select>
           </div>
 
+          {/* Experience */}
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <Clock size={16} className="mr-1" />
-              Min Experience
+              <Clock size={16} className="mr-1" /> Min Experience
             </label>
             <select
-              value={filters.experience}
-              onChange={(e) => handleFilterChange('experience', e.target.value)}
+              value={filters.experience || ""}
+              onChange={(e) => handleChange("experience", e.target.value)}
               className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
             >
               <option value="">Any experience</option>
@@ -136,8 +135,51 @@ const ApplicationsFilter = ({
               <option value="10">10+ years</option>
             </select>
           </div>
+
+          {/* Location */}
+          <div className="flex flex-col">
+            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+              <MapPin size={16} className="mr-1" /> Location
+            </label>
+            <input
+              type="text"
+              value={filters.location || ""}
+              onChange={(e) => handleChange("location", e.target.value)}
+              placeholder="e.g., Midrand"
+              className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
+
+          {/* Qualification */}
+          <div className="flex flex-col">
+            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+              <GraduationCap size={16} className="mr-1" /> Qualification
+            </label>
+            <input
+              type="text"
+              value={filters.qualification || ""}
+              onChange={(e) => handleChange("qualification", e.target.value)}
+              placeholder="e.g., BSc Computer Science"
+              className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
+
+          {/* Salary */}
+          <div className="flex flex-col">
+            <label className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+              <DollarSign size={16} className="mr-1" /> Min Salary
+            </label>
+            <input
+              type="number"
+              value={filters.salary || ""}
+              onChange={(e) => handleChange("salary", e.target.value)}
+              placeholder="e.g., 100000"
+              className="p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
         </div>
 
+        {/* Footer */}
         <div className="mt-6 flex justify-between items-center">
           <button
             onClick={onClearFilters}
@@ -155,6 +197,6 @@ const ApplicationsFilter = ({
       </div>
     </div>
   );
-}; 
+};
 
 export default ApplicationsFilter;
