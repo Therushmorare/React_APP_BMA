@@ -13,8 +13,17 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
   const [readyToInterview, setReadyToInterview] = useState(false);
   const [interviewScheduled, setInterviewScheduled] = useState(false);
   const [interviewCompleted, setInterviewCompleted] = useState(false);
+  const [offerSent, setOfferSent] = useState(false);
   const [onboarded, setOnboarded] = useState(false);
   const [showInterviewSchedule, setShowInterviewSchedule] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showOnboardModal, setShowOnboardModal] = useState(false);
+  const [offerDetails, setOfferDetails] = useState("");
+  const [offerSalary, setOfferSalary] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [onboardingNotes, setOnboardingNotes] = useState("");
+  const [offers, setOffers] = useState([]);
+  const [selectedOffer, setSelectedOffer] = useState(null);
 
   const stages = [
     'Screening', 'Interview', 'Technical Test', 'Final Interview', 'Offer', 'Hired', 'Rejected'
@@ -152,6 +161,122 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
   } finally {
     setLoading(false);
   }
+  };
+
+    const handleSendOfferConfirm = async () => {
+    const employeeId = sessionStorage.getItem('user_id'); // logged-in HR employee
+    const candidateId = candidate.id; // selected candidate
+    const jobId = candidate.job_id; // candidate's job
+
+    if (!offerDetails) {
+      alert("Please add the offer details before sending.");
+      return;
+    }
+
+    setLoading(true); // optional loading state
+    setError("");
+
+    try {
+      const response = await fetch(`https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/sendOffer/${employeeId}/${candidateId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employee_id: employeeId,
+          candidate_id: candidateId,
+          job_id: jobId,
+          message: offerDetails,
+        }),
+      });
+
+      if (!response.ok) {
+        const resText = await response.text();
+        throw new Error(resText || "Failed to send offer");
+      }
+
+      // reset modal state
+      setOfferDetails("");
+      setShowOfferModal(false);
+      setOfferSent(true); // mark offer as sent
+      alert("Offer sent successfully!");
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong while sending the offer");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch candidate offers when component mounts or candidate changes
+  useEffect(() => {
+    const fetchCandidateOffers = async () => {
+      if (!candidate?.id) return;
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch(`https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/myJobOffers/${candidate.id}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch job offers");
+        }
+        const data = await response.json();
+        setOffers(data.offers || []);
+      } catch (err) {
+        console.error(err);
+        setError(err.message || "Something went wrong fetching offers");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCandidateOffers();
+  }, [candidate]);
+
+  // Onboard candidate
+  const handleOnboardConfirm = async () => {
+    if (!selectedOffer) {
+      alert("Please select a job offer to onboard the candidate");
+      return;
+    }
+
+    const employeeId = sessionStorage.getItem("user_id");
+    const candidateId = candidate.id;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/onboardEmployee/${employeeId}/${candidateId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            employee_id: employeeId,
+            candidate_id: candidateId,
+            job_id: selectedOffer.job_id,
+            offer_id: selectedOffer.offer_id,
+            company_domain: selectedOffer.office || "", // adjust if domain is elsewhere
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const resText = await response.text();
+        throw new Error(resText || "Failed to onboard candidate");
+      }
+
+      alert("Candidate onboarded successfully!");
+      setShowOnboardModal(false);
+      setOffers([]); // reset
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong during onboarding");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStageColor = (stage) => {
@@ -475,35 +600,48 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
             {/* Ready to Interview */}
             <button
               onClick={() => setReadyToInterview(true)}
-              disabled={readyToInterview} // disable once clicked
-              className={`w-full py-3 rounded-lg font-medium transition-colors
+              disabled={readyToInterview}
+              className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
                 ${readyToInterview ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-green-700 text-white hover:bg-green-800'}`}
             >
-              Ready to Interview
+              <span>✅</span>
+              <span>{readyToInterview ? 'Ready to Interview' : 'Mark as Ready'}</span>
             </button>
 
             {/* Set Interview */}
             <button
-              onClick={() => setShowInterviewSchedulesetShowInterview(true)}
-              disabled={!readyToInterview || interviewScheduled} // enable only after ready
-              className={`w-full py-3 rounded-lg font-medium transition-colors
+              onClick={() => setShowInterviewSchedule(true)} // fixed naming
+              disabled={!readyToInterview || interviewScheduled}
+              className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
                 ${!readyToInterview || interviewScheduled ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
             >
-              {interviewScheduled ? 'Interview Scheduled' : 'Set Interview'}
+              <span>📅</span>
+              <span>{interviewScheduled ? 'Interview Scheduled' : 'Set Interview'}</span>
             </button>
 
             {/* Send Offer */}
+            <button
+              onClick={() => setShowOfferModal(true)}
+              disabled={!interviewCompleted || offerSent}
+              className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
+                ${!interviewCompleted || offerSent ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-yellow-600 text-white hover:bg-yellow-700'}`}
+            >
+              <span>💼</span>
+              <span>{offerSent ? 'Offer Sent' : 'Send Offer'}</span>
+            </button>
 
             {/* Onboard Candidate */}
             <button
-              onClick={handleOnboardCandidate}
-              disabled={!interviewCompleted || onboarded} // enable only after interview
-              className={`w-full py-3 rounded-lg font-medium transition-colors
+              onClick={() => setShowOnboardModal(true)}
+              disabled={!interviewCompleted || onboarded}
+              className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
                 ${!interviewCompleted || onboarded ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
             >
-              {onboarded ? 'Candidate Onboarded' : 'Onboard Candidate'}
+              <span>🎉</span>
+              <span>{onboarded ? 'Candidate Onboarded' : 'Onboard Candidate'}</span>
             </button>
           </div>
+
         </div>
       </div>
 
@@ -608,6 +746,90 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
         </div>
       </div>
     )}
+
+      {/* Send Offer Modal */}
+      {showOfferModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 px-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md space-y-6 relative">
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+              <h2 className="text-lg font-semibold text-gray-800">Send Offer</h2>
+              <button
+                onClick={() => setShowOfferModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Offer Details */}
+            <div className="flex flex-col space-y-3">
+              <label className="text-sm font-medium text-gray-700">Offer Details</label>
+              <textarea
+                value={offerDetails}
+                onChange={(e) => setOfferDetails(e.target.value)}
+                rows={4}
+                placeholder="Add offer details here..."
+                className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-100 focus:border-yellow-600"
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-between space-x-3 mt-4">
+              <button
+                onClick={() => setShowOfferModal(false)}
+                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendOfferConfirm}
+                className="flex-1 bg-yellow-600 text-white py-3 rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+              >
+                Send Offer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onboard Candidate Modal */}
+      {showOnboardModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 px-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md space-y-6 relative">
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+              <h2 className="text-lg font-semibold text-gray-800">Onboard Candidate</h2>
+              <button
+                onClick={() => setShowOnboardModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-gray-600">
+              Are you sure you want to onboard this candidate ? This action cannot be undone.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex justify-between space-x-3 mt-4">
+              <button
+                onClick={() => setShowOnboardModal(false)}
+                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleOnboardConfirm}
+                className="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                Onboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );
