@@ -23,40 +23,35 @@ const JobCard = ({ job, activeDropdown, setActiveDropdown, handleStatusChange, h
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setActiveDropdown(activeDropdown === job.id ? null : job.id);
+                handleMenuClick(job, 'feedback');
               }}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
             >
-              <MoreVertical size={16} />
+              <Eye size={14} className="mr-2" />
+              View Feedback
             </button>
-            
-            {activeDropdown === job.id && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                <div className="py-1">
-                  <button
-                    onClick={() => handleMenuClick(job, 'feedback')}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    <Eye size={14} className="mr-2" />
-                    View Feedback
-                  </button>
-                  <button
-                    onClick={() => handleMenuClick(job, 'pipeline')}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    <BarChart3 size={14} className="mr-2" />
-                    Pipeline
-                  </button>
-                  <button
-                    onClick={() => handleMenuClick(job, 'fullJob')}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    <FileText size={14} className="mr-2" />
-                    Full Job Post
-                  </button>
-                </div>
-              </div>
-            )}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMenuClick(job, 'pipeline');
+              }}
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+            >
+              <BarChart3 size={14} className="mr-2" />
+              Pipeline
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMenuClick(job, 'fullJob');
+              }}
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+            >
+              <FileText size={14} className="mr-2" />
+              Full Job Post
+            </button>
           </div>
         </div>
 
