@@ -14,7 +14,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
   const [interviewScheduled, setInterviewScheduled] = useState(false);
   const [interviewCompleted, setInterviewCompleted] = useState(false);
   const [onboarded, setOnboarded] = useState(false);
-
+  const [showInterviewSchedule, setShowInterviewSchedule] = useState(false);
 
   const stages = [
     'Screening', 'Interview', 'Technical Test', 'Final Interview', 'Offer', 'Hired', 'Rejected'
@@ -50,6 +50,108 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
       activeTab
     });
     onClose();
+  };
+
+  const handleEvaluation = async () => {
+    const employeeId = sessionStorage.getItem("user_id");
+    const candidateId = candidate?.id;
+    const jobId = candidate?.job_id;
+
+    if (!employeeId || !candidateId || !jobId) {
+      setError("Missing required IDs for submission");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/candidateEvaluation/${employeeId}/${candidateId}/${jobId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            employee_id: employeeId,
+            candidate_id: candidateId,
+            job_id: jobId,
+            notes,
+            rating,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const resText = await response.text();
+        throw new Error(resText || "Failed to submit evaluation");
+      }
+
+      setNotes("");
+      setRating(0);
+      if (onSuccess) onSuccess();
+      alert("Evaluation submitted successfully!");
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleScheduleInterview = async () => {
+  const employeeId = sessionStorage.getItem("user_id"); // current HR user
+  const candidateId = candidate.id; // selected candidate
+  const jobId = candidate.job_id; // job applied for
+  const jobCode = candidate.job_code; // optional if needed
+
+  // Add any extra info fields if you have them
+  const payload = {
+    employee_id: employeeId,
+    candidate_id: candidateId,
+    job_id: jobId,
+    job_code: jobCode,
+    date: interviewDate, // YYYY-MM-DD
+    time: interviewTime, // HH:MM
+    location: interviewLocation || "", // optional
+    details: interviewDetails || "",   // optional
+  };
+
+  setLoading(true);
+  setError("");
+
+  try {
+    const response = await fetch(
+      `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/interviewCandidate/${employeeId}/${candidateId}/${jobId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!response.ok) {
+      const resText = await response.text();
+      throw new Error(resText || "Failed to schedule interview");
+    }
+
+    // Reset form
+    setInterviewDate("");
+    setInterviewTime("");
+    setInterviewType("");
+    setInterviewLocation("");
+    setInterviewDetails("");
+
+    setShowInterviewSchedule(false); // close modal
+    alert("Interview scheduled successfully!");
+    if (onSuccess) onSuccess(); // optional callback
+  } catch (err) {
+    console.error(err);
+    setError(err.message || "Something went wrong");
+  } finally {
+    setLoading(false);
+  }
   };
 
   const getStageColor = (stage) => {
@@ -276,7 +378,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
                 {/* Submit Button */}
                 <div className="pt-4 border-t border-gray-200">
                   <button
-                    onClick={handleSubmit}
+                    onClick={handleEvaluation}
                     className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium"
                   >
                     Submit Changes
@@ -382,13 +484,15 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
 
             {/* Set Interview */}
             <button
-              onClick={handleSetInterview}
+              onClick={() => setShowInterviewSchedulesetShowInterview(true)}
               disabled={!readyToInterview || interviewScheduled} // enable only after ready
               className={`w-full py-3 rounded-lg font-medium transition-colors
                 ${!readyToInterview || interviewScheduled ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
             >
               {interviewScheduled ? 'Interview Scheduled' : 'Set Interview'}
             </button>
+
+            {/* Send Offer */}
 
             {/* Onboard Candidate */}
             <button
@@ -402,8 +506,112 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
           </div>
         </div>
       </div>
+
+    {/* Interview Schedule Modal */}
+    {showInterviewSchedule && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 px-4">
+        <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md space-y-6 relative">
+          
+          {/* Header */}
+          <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+            <h2 className="text-lg font-semibold text-gray-800">Schedule Interview</h2>
+            <button
+              onClick={() => setShowInterviewSchedule(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Date */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 mb-1">Date</label>
+            <input
+              type="date"
+              value={interviewDate}
+              onChange={(e) => setInterviewDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600"
+            />
+          </div>
+
+          {/* Time */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 mb-1">Time</label>
+            <input
+              type="time"
+              value={interviewTime}
+              onChange={(e) => setInterviewTime(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600"
+            />
+          </div>
+
+          {/* Type */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 mb-1">Interview Type</label>
+            <select
+              value={interviewType}
+              onChange={(e) => setInterviewType(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600"
+            >
+              <option value="">Select Type</option>
+              <option value="online">Online</option>
+              <option value="onsite">Onsite</option>
+            </select>
+          </div>
+
+          {/* Location */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input
+              type="text"
+              value={interviewLocation}
+              onChange={(e) => setInterviewLocation(e.target.value)}
+              placeholder="e.g., Zoom link or Office address"
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600"
+            />
+          </div>
+
+          {/* Details / Notes */}
+          <div className="flex flex-col">
+            <label className="text-sm font-medium text-gray-700 mb-1">Details / Notes</label>
+            <textarea
+              value={interviewDetails}
+              onChange={(e) => setInterviewDetails(e.target.value)}
+              rows={3}
+              placeholder="Add any extra info for the candidate..."
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600"
+            />
+          </div>
+
+          {/* Error message */}
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          {/* Buttons */}
+          <div className="flex justify-between space-x-3 mt-4">
+            <button
+              onClick={() => setShowInterviewSchedule(false)}
+              className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleScheduleInterview}
+              className={`flex-1 py-3 rounded-lg transition-colors font-medium ${
+                loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
+              disabled={loading}
+            >
+              {loading ? "Scheduling..." : "Schedule"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     </>
   );
 };
+
 
 export default CandidatePanel;
