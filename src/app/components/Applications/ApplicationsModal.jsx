@@ -207,9 +207,15 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
     const employeeId = sessionStorage.getItem('user_id');
     const candidateId = application.id;
+    const token = sessionStorage.getItem('access_token'); //get JWT token
 
     if (!employeeId) {
       console.error("Employee ID not found in sessionStorage.");
+      return;
+    }
+
+    if (!token) {
+      console.error("JWT token not found in sessionStorage. User might need to log in again.");
       return;
     }
 
@@ -222,11 +228,12 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`, //include JWT token
           },
           body: JSON.stringify({
             employee_id: employeeId,
             candidate_id: candidateId,
-            status: "SCREENED", // change this dynamically if needed
+            status: "SCREENED", // can make dynamic if needed
           }),
         }
       );
@@ -241,6 +248,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
     } catch (error) {
       console.error("Error updating application:", error);
+      alert("Failed to update application. Please check console for details.");
     } finally {
       setLoading(false);
     }
