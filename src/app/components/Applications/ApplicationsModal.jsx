@@ -233,7 +233,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
           body: JSON.stringify({
             employee_id: employeeId,
             candidate_id: candidateId,
-            status: "SCREENED", // can make dynamic if needed
+            status: "SCREENING", // can make dynamic if needed
           }),
         }
       );
@@ -277,6 +277,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`, //include JWT token
           },
           body: JSON.stringify({
             employee_id: employeeId,
