@@ -34,6 +34,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
   const [onboardingNotes, setOnboardingNotes] = useState("");
   const [offers, setOffers] = useState([]);
   const [selectedOffer, setSelectedOffer] = useState(null);
+  const [showConfirmInterviewModal, setShowConfirmInterviewModal] = useState(false);
 
   // NEW STATES
   const [interviewDate, setInterviewDate] = useState("");
@@ -551,7 +552,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           <div className="p-6 border-t border-gray-200 space-y-3">
             {/* Ready to Interview */}
             <button
-              onClick={() => setReadyToInterview(true)}
+              onClick={() => setShowConfirmInterviewModal(true)}
               disabled={readyToInterview}
               className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
                 ${readyToInterview ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-green-700 text-white hover:bg-green-800'}`}
@@ -596,6 +597,32 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
         </div>
       </div>
+
+    {showConfirmInterviewModal && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="bg-white p-6 rounded shadow-lg w-96">
+          <h2 className="text-lg font-semibold mb-4">Confirm Action</h2>
+          <p className="mb-6">Are you sure you want to mark this candidate as ready for interview?</p>
+          <div className="flex justify-end gap-3">
+            <button
+              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              onClick={() => setShowConfirmInterviewModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              onClick={() => {
+                handleReadyToInterview();           // your function to mark ready
+                setShowConfirmInterviewModal(false); // close modal
+              }}
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Interview Schedule Modal */}
     {showInterviewSchedule && (
