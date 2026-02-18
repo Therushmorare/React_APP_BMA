@@ -1,23 +1,28 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Phone, FileText, Star, Send } from 'lucide-react';
 import { useApplicationEvaluation } from '@/app/utils/useApplicationEvaluation';
 
-const CandidatePanel = ({ candidate, isOpen, onClose }) => {
+const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
+  // ====== Panel State ======
   const [activeTab, setActiveTab] = useState('application');
   const [selectedStage, setSelectedStage] = useState('');
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState('');
+
+  // ====== Interview & Offer State ======
   const [readyToInterview, setReadyToInterview] = useState(false);
   const [interviewScheduled, setInterviewScheduled] = useState(false);
   const [interviewCompleted, setInterviewCompleted] = useState(false);
   const [offerSent, setOfferSent] = useState(false);
   const [onboarded, setOnboarded] = useState(false);
+
   const [showInterviewSchedule, setShowInterviewSchedule] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showOnboardModal, setShowOnboardModal] = useState(false);
+
   const [offerDetails, setOfferDetails] = useState("");
   const [offerSalary, setOfferSalary] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -25,6 +30,18 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
   const [offers, setOffers] = useState([]);
   const [selectedOffer, setSelectedOffer] = useState(null);
 
+  // ====== Loading & Error ======
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // ====== Interview Form Fields ======
+  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewTime, setInterviewTime] = useState("");
+  const [interviewType, setInterviewType] = useState("");
+  const [interviewLocation, setInterviewLocation] = useState("");
+  const [interviewDetails, setInterviewDetails] = useState("");
+
+  // ====== Stages & Email Templates ======
   const stages = [
     'Screening', 'Interview', 'Technical Test', 'Final Interview', 'Offer', 'Hired', 'Rejected'
   ];
@@ -36,31 +53,56 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
     { value: 'onboarding', label: 'Onboarding Welcome' }
   ];
 
-  const { applications, loading, error } = useApplicationEvaluation(candidate?.id);
+  // ====== Fetch candidate applications ======
+  const { applications, loading: evalLoading, error: evalError } = useApplicationEvaluation(candidate?.id);
 
+  // ====== Reset state when candidate opens ======
   useEffect(() => {
     if (isOpen && candidate) {
-      setSelectedStage(candidate.stage);
+      setSelectedStage(candidate.stage || '');
       setActiveTab('application');
       setNotes('');
       setRating(0);
       setSelectedTemplate('');
+      setReadyToInterview(false);
+      setInterviewScheduled(false);
+      setInterviewCompleted(false);
+      setOfferSent(false);
+      setOnboarded(false);
+      setShowInterviewSchedule(false);
+      setShowOfferModal(false);
+      setShowOnboardModal(false);
+      setOfferDetails("");
+      setOfferSalary("");
+      setStartDate("");
+      setOnboardingNotes("");
+      setSelectedOffer(null);
+      setInterviewDate("");
+      setInterviewTime("");
+      setInterviewType("");
+      setInterviewLocation("");
+      setInterviewDetails("");
+      setError("");
     }
   }, [isOpen, candidate?.id]);
 
   if (!candidate) return null;
 
-  const handleSubmit = () => {
-    console.log('Submitting changes:', {
-      candidateId: candidate.id,
-      newStage: selectedStage,
-      notes,
-      rating,
-      activeTab
-    });
-    onClose();
+  // ====== Helper Functions ======
+  const getStageColor = (stage) => {
+    const colors = {
+      'Screening': 'bg-yellow-100 text-yellow-800',
+      'Interview': 'bg-blue-100 text-blue-800',
+      'Technical Test': 'bg-purple-100 text-purple-800',
+      'Final Interview': 'bg-indigo-100 text-indigo-800',
+      'Offer': 'bg-orange-100 text-orange-800',
+      'Hired': 'bg-green-100 text-green-800',
+      'Rejected': 'bg-red-100 text-red-800'
+    };
+    return colors[stage] || 'bg-gray-100 text-gray-800';
   };
 
+  // ====== Submit Evaluation ======
   const handleEvaluation = async () => {
     const employeeId = sessionStorage.getItem("user_id");
     const candidateId = candidate?.id;
@@ -79,23 +121,12 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/candidateEvaluation/${employeeId}/${candidateId}/${jobId}`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            employee_id: employeeId,
-            candidate_id: candidateId,
-            job_id: jobId,
-            notes,
-            rating,
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ employee_id: employeeId, candidate_id: candidateId, job_id: jobId, notes, rating }),
         }
       );
 
-      if (!response.ok) {
-        const resText = await response.text();
-        throw new Error(resText || "Failed to submit evaluation");
-      }
+      if (!response.ok) throw new Error(await response.text() || "Failed to submit evaluation");
 
       setNotes("");
       setRating(0);
@@ -109,96 +140,80 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
     }
   };
 
+  // ====== Schedule Interview ======
   const handleScheduleInterview = async () => {
-  const employeeId = sessionStorage.getItem("user_id"); // current HR user
-  const candidateId = candidate.id; // selected candidate
-  const jobId = candidate.job_id; // job applied for
-  const jobCode = candidate.job_code; // optional if needed
+    const employeeId = sessionStorage.getItem("user_id");
+    const candidateId = candidate.id;
+    const jobId = candidate.job_id;
+    const jobCode = candidate.job_code;
 
-  // Add any extra info fields if you have them
-  const payload = {
-    employee_id: employeeId,
-    candidate_id: candidateId,
-    job_id: jobId,
-    job_code: jobCode,
-    date: interviewDate, // YYYY-MM-DD
-    time: interviewTime, // HH:MM
-    location: interviewLocation || "", // optional
-    details: interviewDetails || "",   // optional
-  };
-
-  setLoading(true);
-  setError("");
-
-  try {
-    const response = await fetch(
-      `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/interviewCandidate/${employeeId}/${candidateId}/${jobId}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    if (!response.ok) {
-      const resText = await response.text();
-      throw new Error(resText || "Failed to schedule interview");
+    if (!interviewDate || !interviewTime) {
+      alert("Please select date and time for the interview");
+      return;
     }
 
-    // Reset form
-    setInterviewDate("");
-    setInterviewTime("");
-    setInterviewType("");
-    setInterviewLocation("");
-    setInterviewDetails("");
+    const payload = {
+      employee_id: employeeId,
+      candidate_id: candidateId,
+      job_id: jobId,
+      job_code: jobCode,
+      date: interviewDate,
+      time: interviewTime,
+      location: interviewLocation || "",
+      details: interviewDetails || ""
+    };
 
-    setShowInterviewSchedule(false); // close modal
-    alert("Interview scheduled successfully!");
-    if (onSuccess) onSuccess(); // optional callback
-  } catch (err) {
-    console.error(err);
-    setError(err.message || "Something went wrong");
-  } finally {
-    setLoading(false);
-  }
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/interviewCandidate/${employeeId}/${candidateId}/${jobId}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
+      );
+
+      if (!response.ok) throw new Error(await response.text() || "Failed to schedule interview");
+
+      setInterviewDate(""); setInterviewTime(""); setInterviewType("");
+      setInterviewLocation(""); setInterviewDetails("");
+      setShowInterviewSchedule(false);
+      setInterviewScheduled(true);
+      alert("Interview scheduled successfully!");
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
-    const handleSendOfferConfirm = async () => {
-    const employeeId = sessionStorage.getItem('user_id'); // logged-in HR employee
-    const candidateId = candidate.id; // selected candidate
-    const jobId = candidate.job_id; // candidate's job
+  // ====== Send Offer ======
+  const handleSendOfferConfirm = async () => {
+    const employeeId = sessionStorage.getItem('user_id');
+    const candidateId = candidate.id;
+    const jobId = candidate.job_id;
 
     if (!offerDetails) {
       alert("Please add the offer details before sending.");
       return;
     }
 
-    setLoading(true); // optional loading state
+    setLoading(true);
     setError("");
 
     try {
       const response = await fetch(`https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/sendOffer/${employeeId}/${candidateId}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          employee_id: employeeId,
-          candidate_id: candidateId,
-          job_id: jobId,
-          message: offerDetails,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employee_id: employeeId, candidate_id: candidateId, job_id: jobId, message: offerDetails }),
       });
 
-      if (!response.ok) {
-        const resText = await response.text();
-        throw new Error(resText || "Failed to send offer");
-      }
+      if (!response.ok) throw new Error(await response.text() || "Failed to send offer");
 
-      // reset modal state
       setOfferDetails("");
       setShowOfferModal(false);
-      setOfferSent(true); // mark offer as sent
+      setOfferSent(true);
       alert("Offer sent successfully!");
     } catch (err) {
       console.error(err);
@@ -208,19 +223,16 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
     }
   };
 
-  // Fetch candidate offers when component mounts or candidate changes
+  // ====== Fetch Candidate Offers ======
   useEffect(() => {
     const fetchCandidateOffers = async () => {
       if (!candidate?.id) return;
-
       setLoading(true);
       setError("");
 
       try {
         const response = await fetch(`https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/myJobOffers/${candidate.id}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch job offers");
-        }
+        if (!response.ok) throw new Error("Failed to fetch job offers");
         const data = await response.json();
         setOffers(data.offers || []);
       } catch (err) {
@@ -230,11 +242,10 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
         setLoading(false);
       }
     };
-
     fetchCandidateOffers();
   }, [candidate]);
 
-  // Onboard candidate
+  // ====== Onboard Candidate ======
   const handleOnboardConfirm = async () => {
     if (!selectedOffer) {
       alert("Please select a job offer to onboard the candidate");
@@ -258,19 +269,17 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
             candidate_id: candidateId,
             job_id: selectedOffer.job_id,
             offer_id: selectedOffer.offer_id,
-            company_domain: selectedOffer.office || "", // adjust if domain is elsewhere
+            company_domain: selectedOffer.office || ""
           }),
         }
       );
 
-      if (!response.ok) {
-        const resText = await response.text();
-        throw new Error(resText || "Failed to onboard candidate");
-      }
+      if (!response.ok) throw new Error(await response.text() || "Failed to onboard candidate");
 
-      alert("Candidate onboarded successfully!");
       setShowOnboardModal(false);
-      setOffers([]); // reset
+      setOffers([]);
+      setOnboarded(true);
+      alert("Candidate onboarded successfully!");
     } catch (err) {
       console.error(err);
       setError(err.message || "Something went wrong during onboarding");
@@ -279,33 +288,26 @@ const CandidatePanel = ({ candidate, isOpen, onClose }) => {
     }
   };
 
-  const getStageColor = (stage) => {
-    const colors = {
-      'Screening': 'bg-yellow-100 text-yellow-800',
-      'Interview': 'bg-blue-100 text-blue-800',
-      'Technical Test': 'bg-purple-100 text-purple-800',
-      'Final Interview': 'bg-indigo-100 text-indigo-800',
-      'Offer': 'bg-orange-100 text-orange-800',
-      'Hired': 'bg-green-100 text-green-800',
-      'Rejected': 'bg-red-100 text-red-800'
-    };
-    return colors[stage] || 'bg-gray-100 text-gray-800';
-  };
-
+  // ====== Simulate Interview Completion ======
   const handleSetInterview = () => {
-  if (!readyToInterview) return; // safety check
-  setInterviewScheduled(true);
+    if (!readyToInterview) return;
+    setInterviewScheduled(true);
 
-    // simulate interview completion after some action
     setTimeout(() => {
       setInterviewCompleted(true);
-    }, 1000); // or replace with actual interview completion logic
+    }, 1000);
   };
 
   const handleOnboardCandidate = () => {
     if (!interviewCompleted) return;
     setOnboarded(true);
     console.log("Candidate onboarded!");
+  };
+
+  // ====== Panel Submit ======
+  const handleSubmit = () => {
+    console.log('Submitting changes:', { candidateId: candidate.id, newStage: selectedStage, notes, rating, activeTab });
+    onClose();
   };
 
   return (
