@@ -5,6 +5,15 @@ import { X, Mail, Phone, FileText, Star, Send } from 'lucide-react';
 import { useApplicationEvaluation } from '@/app/utils/useApplicationEvaluation';
 
 const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
+  // ====== Employee ID ======
+  const [employeeId, setEmployeeId] = useState("");
+
+  useEffect(() => {
+    // Only runs on client
+    const id = sessionStorage.getItem("user_id");
+    if (id) setEmployeeId(id);
+  }, []);
+
   // ====== Panel State ======
   const [activeTab, setActiveTab] = useState('application');
   const [selectedStage, setSelectedStage] = useState('');
@@ -98,11 +107,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Submit Evaluation ======
   const handleEvaluation = async () => {
-    const employeeId = sessionStorage.getItem("user_id");
-    const candidateId = candidate?.id;
-    const jobId = candidate?.job_id;
-
-    if (!employeeId || !candidateId || !jobId) {
+    if (!employeeId || !candidate?.id || !candidate?.job_id) {
       setError("Missing required IDs for submission");
       return;
     }
@@ -112,11 +117,11 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
     try {
       const response = await fetch(
-        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/candidateEvaluation/${employeeId}/${candidateId}/${jobId}`,
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/candidateEvaluation/${employeeId}/${candidate.id}/${candidate.job_id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ employee_id: employeeId, candidate_id: candidateId, job_id: jobId, notes, rating }),
+          body: JSON.stringify({ employee_id: employeeId, candidate_id: candidate.id, job_id: candidate.job_id, notes, rating }),
         }
       );
 
@@ -136,10 +141,10 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Schedule Interview ======
   const handleScheduleInterview = async () => {
-    const employeeId = sessionStorage.getItem("user_id");
-    const candidateId = candidate.id;
-    const jobId = candidate.job_id;
-    const jobCode = candidate.job_code;
+    if (!employeeId) {
+      setError("Missing employee ID");
+      return;
+    }
 
     if (!interviewDate || !interviewTime) {
       alert("Please select date and time for the interview");
@@ -148,9 +153,9 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
     const payload = {
       employee_id: employeeId,
-      candidate_id: candidateId,
-      job_id: jobId,
-      job_code: jobCode,
+      candidate_id: candidate.id,
+      job_id: candidate.job_id,
+      job_code: candidate.job_code,
       date: interviewDate,
       time: interviewTime,
       location: interviewLocation || "",
@@ -162,7 +167,7 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
     try {
       const response = await fetch(
-        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/interviewCandidate/${employeeId}/${candidateId}/${jobId}`,
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/interviewCandidate/${employeeId}/${candidate.id}/${candidate.job_id}`,
         { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
       );
 
@@ -184,9 +189,10 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Send Offer ======
   const handleSendOfferConfirm = async () => {
-    const employeeId = sessionStorage.getItem('user_id');
-    const candidateId = candidate.id;
-    const jobId = candidate.job_id;
+    if (!employeeId) {
+      setError("Missing employee ID");
+      return;
+    }
 
     if (!offerDetails) {
       alert("Please add the offer details before sending.");
@@ -197,11 +203,14 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
     setError("");
 
     try {
-      const response = await fetch(`https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/sendOffer/${employeeId}/${candidateId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employee_id: employeeId, candidate_id: candidateId, job_id: jobId, message: offerDetails }),
-      });
+      const response = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/sendOffer/${employeeId}/${candidate.id}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ employee_id: employeeId, candidate_id: candidate.id, job_id: candidate.job_id, message: offerDetails }),
+        }
+      );
 
       if (!response.ok) throw new Error(await response.text() || "Failed to send offer");
 
@@ -241,26 +250,28 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Onboard Candidate ======
   const handleOnboardConfirm = async () => {
+    if (!employeeId) {
+      setError("Missing employee ID");
+      return;
+    }
+
     if (!selectedOffer) {
       alert("Please select a job offer to onboard the candidate");
       return;
     }
-
-    const employeeId = sessionStorage.getItem("user_id");
-    const candidateId = candidate.id;
 
     setLoading(true);
     setError("");
 
     try {
       const response = await fetch(
-        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/onboardEmployee/${employeeId}/${candidateId}`,
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/onboardEmployee/${employeeId}/${candidate.id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             employee_id: employeeId,
-            candidate_id: candidateId,
+            candidate_id: candidate.id,
             job_id: selectedOffer.job_id,
             offer_id: selectedOffer.offer_id,
             company_domain: selectedOffer.office || ""
