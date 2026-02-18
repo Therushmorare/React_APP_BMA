@@ -79,7 +79,7 @@ const CandidatesPage = () => {
         setAllCandidates(candidates);
 
         // Filter only SCREENING stage candidates
-        const screening = candidates.filter(c => c.stage?.toUpperCase() === "SCREENING");
+        const screening = candidates.filter(c => c.stage?.toUpperCase() === "SCREENING" || c.stage?.toUpperCase() === "READY_TO_INTERVIEW");
         setScreeningCandidates(screening);
 
       } catch (error) {
