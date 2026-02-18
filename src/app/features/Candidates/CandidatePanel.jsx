@@ -294,6 +294,64 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
     }
   };
 
+  const handleReadyToInterview = async () => {
+  const token = sessionStorage.getItem('access_token'); // get JWT token
+
+  if (!employeeId) {
+    setError("Missing employee ID");
+    return;
+  }
+
+  if (!candidate?.id) {
+    setError("Candidate ID missing");
+    return;
+  }
+
+  if (!token) {
+    console.error("JWT token not found in sessionStorage. User might need to log in again.");
+    setError("You are not authenticated. Please log in again.");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    const response = await fetch(
+      `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/updateApplicationStatus/${employeeId}/${candidate.id}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          employee_id: employeeId,
+          candidate_id: candidate.id,
+          status: "READY_TO_INTERVIEW",
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update application status: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log("Application updated successfully:", data);
+    setReadyToInterview(true); // update UI state
+    setShowConfirmInterviewModal(false); // close confirm modal
+    alert("Candidate marked as Ready to Interview!");
+    
+  } catch (err) {
+    console.error("Error updating application:", err);
+    setError("Failed to update application. Check console for details.");
+  } finally {
+    setLoading(false);
+  }
+  };
+
   // ====== Simulate Interview Completion ======
   const handleSetInterview = () => {
     if (!readyToInterview) return;
