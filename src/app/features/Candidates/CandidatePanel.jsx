@@ -108,6 +108,14 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Submit Evaluation ======
   const handleEvaluation = async () => {
+    const token = sessionStorage.getItem('access_token'); // get JWT token
+
+    if (!token) {
+      console.error("JWT token not found in sessionStorage. User might need to log in again.");
+      setError("You are not authenticated. Please log in again.");
+      return;
+    }
+
     if (!employeeId || !candidate?.id || !candidate?.job_id) {
       setError("Missing required IDs for submission");
       return;
@@ -121,7 +129,10 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/candidateEvaluation/${employeeId}/${candidate.id}/${candidate.job_id}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
           body: JSON.stringify({ employee_id: employeeId, candidate_id: candidate.id, job_id: candidate.job_id, notes, rating }),
         }
       );
@@ -142,6 +153,14 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Schedule Interview ======
   const handleScheduleInterview = async () => {
+    const token = sessionStorage.getItem('access_token'); // get JWT token
+
+    if (!token) {
+      console.error("JWT token not found in sessionStorage. User might need to log in again.");
+      setError("You are not authenticated. Please log in again.");
+      return;
+    }
+
     if (!employeeId) {
       setError("Missing employee ID");
       return;
@@ -169,7 +188,12 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
     try {
       const response = await fetch(
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/interviewCandidate/${employeeId}/${candidate.id}/${candidate.job_id}`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }
+        { method: "POST",
+          headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+          body: JSON.stringify(payload) }
       );
 
       if (!response.ok) throw new Error(await response.text() || "Failed to schedule interview");
@@ -190,6 +214,19 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Send Offer ======
   const handleSendOfferConfirm = async () => {
+    const token = sessionStorage.getItem('access_token'); // get JWT token
+
+    if (!employeeId) {
+      setError("Missing employee ID");
+      return;
+    }
+
+    if (!token) {
+      console.error("JWT token not found in sessionStorage. User might need to log in again.");
+      setError("You are not authenticated. Please log in again.");
+      return;
+    }
+
     if (!employeeId) {
       setError("Missing employee ID");
       return;
@@ -208,7 +245,10 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/sendOffer/${employeeId}/${candidate.id}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
           body: JSON.stringify({ employee_id: employeeId, candidate_id: candidate.id, job_id: candidate.job_id, message: offerDetails }),
         }
       );
@@ -251,13 +291,26 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Onboard Candidate ======
   const handleOnboardConfirm = async () => {
+    const token = sessionStorage.getItem('access_token'); // get JWT token
+
     if (!employeeId) {
       setError("Missing employee ID");
       return;
     }
 
-    if (!selectedOffer) {
-      alert("Please select a job offer to onboard the candidate");
+    if (!selectedOffer){
+      setError("Offer does not exist");
+      return;
+    }
+
+    if (!candidate?.id) {
+      setError("Candidate ID missing");
+      return;
+    }
+
+    if (!token) {
+      console.error("JWT token not found in sessionStorage. User might need to log in again.");
+      setError("You are not authenticated. Please log in again.");
       return;
     }
 
@@ -269,7 +322,10 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/onboardEmployee/${employeeId}/${candidate.id}`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
           body: JSON.stringify({
             employee_id: employeeId,
             candidate_id: candidate.id,
