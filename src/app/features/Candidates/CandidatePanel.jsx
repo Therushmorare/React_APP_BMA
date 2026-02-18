@@ -11,18 +11,14 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState('');
-
-  // ====== Interview & Offer State ======
   const [readyToInterview, setReadyToInterview] = useState(false);
   const [interviewScheduled, setInterviewScheduled] = useState(false);
   const [interviewCompleted, setInterviewCompleted] = useState(false);
   const [offerSent, setOfferSent] = useState(false);
   const [onboarded, setOnboarded] = useState(false);
-
   const [showInterviewSchedule, setShowInterviewSchedule] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showOnboardModal, setShowOnboardModal] = useState(false);
-
   const [offerDetails, setOfferDetails] = useState("");
   const [offerSalary, setOfferSalary] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -30,16 +26,14 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
   const [offers, setOffers] = useState([]);
   const [selectedOffer, setSelectedOffer] = useState(null);
 
-  // ====== Loading & Error ======
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // ====== Interview Form Fields ======
+  // NEW STATES
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("");
   const [interviewType, setInterviewType] = useState("");
   const [interviewLocation, setInterviewLocation] = useState("");
   const [interviewDetails, setInterviewDetails] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // ====== Stages & Email Templates ======
   const stages = [
@@ -363,21 +357,6 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
                 </div>
               </div>
               
-              {/*<div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Move to Stage
-                </label>
-                <select
-                  value={selectedStage}
-                  onChange={(e) => setSelectedStage(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-                >
-                  <option value="">Select stage...</option>
-                  {stages.map(stage => (
-                    <option key={stage} value={stage}>{stage}</option>
-                  ))}
-                </select>
-              </div>*/}
             </div>
 
             {/* Toggle Tabs */}
@@ -554,46 +533,6 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
                 </div>
               )}
             </div>
-
-            {/* Documents Section */}
-            {/*<div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Documents</h4>
-              <div className="grid grid-cols-2 gap-3">
-                
-                <button
-                  onClick={() => {
-                    if (candidate.cvUrl) {
-                      const link = document.createElement("a");
-                      link.href = candidate.cvUrl;
-                      link.download = candidate.cv;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    } else {
-                      alert("CV not available");
-                    }
-                  }}
-                  className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <FileText size={16} className="text-green-700" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900">CV</p>
-                    <p className="text-xs text-gray-500">{candidate.cv}</p>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => console.log('Download Driver License')}
-                  className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <FileText size={16} className="text-green-700" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900">Driver License</p>
-                    <p className="text-xs text-gray-500">license.pdf</p>
-                  </div>
-                </button>
-              </div>
-            </div>*/}
 
           </div>
 
