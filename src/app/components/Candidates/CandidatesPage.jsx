@@ -209,12 +209,14 @@ const CandidatesPage = () => {
       )}
 
       {/* Details Panel */}
-      <CandidateDetailsPanel
-        candidate={selectedCandidate}
-        isOpen={isPanelOpen}
-        onClose={handleClosePanel}
-        onUpdate={handleUpdateCandidate}
-      />
+      {selectedCandidate && isPanelOpen && (
+        <CandidateDetailsPanel
+          candidate={selectedCandidate}
+          isOpen={isPanelOpen}
+          onClose={handleClosePanel}
+          onSuccess={handleUpdateCandidate}
+        />
+      )}
     </div>
   );
 };

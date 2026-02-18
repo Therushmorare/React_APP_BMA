@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Mail, Phone, FileText, Star, Send } from 'lucide-react';
 import { useApplicationEvaluation } from '@/app/utils/useApplicationEvaluation';
 
-const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
+const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
   // ====== Employee ID ======
   const [employeeId, setEmployeeId] = useState("");
 
@@ -788,4 +788,4 @@ const CandidatePanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 };
 
 
-export default CandidatePanel;
+export default CandidateDetailsPanel;
