@@ -549,51 +549,63 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-gray-200 space-y-3">
-            {/* Ready to Interview */}
-            <button
-              onClick={() => setShowConfirmInterviewModal(true)}
-              disabled={readyToInterview}
-              className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
-                ${readyToInterview ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-green-700 text-white hover:bg-green-800'}`}
-            >
-              <span>✅</span>
-              <span>{readyToInterview ? 'Ready to Interview' : 'Mark as Ready'}</span>
-            </button>
+        <div className="p-6 border-t border-gray-200 flex flex-wrap gap-3 justify-between">
+          {/* Ready to Interview */}
+          <button
+            onClick={() => setShowConfirmInterviewModal(true)}
+            disabled={readyToInterview}
+            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200
+              ${readyToInterview 
+                ? 'bg-gray-400 cursor-not-allowed opacity-80' 
+                : 'bg-green-600 hover:bg-green-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+              }`}
+          >
+            <span className="text-xl">✅</span>
+            <span>{readyToInterview ? 'Ready' : 'Mark Ready'}</span>
+          </button>
 
-            {/* Set Interview */}
-            <button
-              onClick={() => setShowInterviewSchedule(true)} // fixed naming
-              disabled={!readyToInterview || interviewScheduled}
-              className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
-                ${!readyToInterview || interviewScheduled ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-            >
-              <span>📅</span>
-              <span>{interviewScheduled ? 'Interview Scheduled' : 'Set Interview'}</span>
-            </button>
+          {/* Set Interview */}
+          <button
+            onClick={() => setShowInterviewSchedule(true)}
+            disabled={!readyToInterview || interviewScheduled}
+            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200
+              ${!readyToInterview || interviewScheduled
+                ? 'bg-gray-400 cursor-not-allowed opacity-80'
+                : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+              }`}
+          >
+            <span className="text-xl">📅</span>
+            <span>{interviewScheduled ? 'Scheduled' : 'Set Interview'}</span>
+          </button>
 
-            {/* Send Offer */}
-            <button
-              onClick={() => setShowOfferModal(true)}
-              disabled={!interviewCompleted || offerSent}
-              className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
-                ${!interviewCompleted || offerSent ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-yellow-600 text-white hover:bg-yellow-700'}`}
-            >
-              <span>💼</span>
-              <span>{offerSent ? 'Offer Sent' : 'Send Offer'}</span>
-            </button>
+          {/* Send Offer */}
+          <button
+            onClick={() => setShowOfferModal(true)}
+            disabled={!interviewCompleted || offerSent}
+            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200
+              ${!interviewCompleted || offerSent
+                ? 'bg-gray-400 cursor-not-allowed opacity-80'
+                : 'bg-yellow-500 hover:bg-yellow-600 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+              }`}
+          >
+            <span className="text-xl">💼</span>
+            <span>{offerSent ? 'Sent' : 'Send Offer'}</span>
+          </button>
 
-            {/* Onboard Candidate */}
-            <button
-              onClick={() => setShowOnboardModal(true)}
-              disabled={!interviewCompleted || onboarded}
-              className={`w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium transition-colors
-                ${!interviewCompleted || onboarded ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
-            >
-              <span>🎉</span>
-              <span>{onboarded ? 'Candidate Onboarded' : 'Onboard Candidate'}</span>
-            </button>
-          </div>
+          {/* Onboard Candidate */}
+          <button
+            onClick={() => setShowOnboardModal(true)}
+            disabled={!interviewCompleted || onboarded}
+            className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200
+              ${!interviewCompleted || onboarded
+                ? 'bg-gray-400 cursor-not-allowed opacity-80'
+                : 'bg-purple-600 hover:bg-purple-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
+              }`}
+          >
+            <span className="text-xl">🎉</span>
+            <span>{onboarded ? 'Onboarded' : 'Onboard'}</span>
+          </button>
+        </div>
 
         </div>
       </div>
