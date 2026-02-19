@@ -14,6 +14,7 @@ const mapApplicantToCandidate = (applicant, resumes = []) => {
   const fullName = `${applicant.first_name} ${applicant.last_name}`;
   return {
     id: applicant.applicant_id,
+    jobCode: applicant.job_id,
     name: fullName,
     email: applicant.email,
     phone: applicant.phone_number,

@@ -174,8 +174,8 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
     const payload = {
       employee_id: employeeId,
       candidate_id: candidate.id,
-      job_id: candidate.job_id,
-      job_code: candidate.job_code,
+      job_id: candidate.jobCode,
+      job_code: candidate.jobCode,
       date: interviewDate,
       time: interviewTime,
       location: interviewLocation || "",
