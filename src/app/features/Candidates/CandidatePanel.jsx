@@ -296,6 +296,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Onboard Candidate ======
   const handleOnboardConfirm = async () => {
+    console.log("🔥 Onboard button clicked");
     const token = sessionStorage.getItem('access_token'); // get JWT token
 
     if (!employeeId) {
@@ -931,6 +932,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleOnboardConfirm}
                 className="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
               >
