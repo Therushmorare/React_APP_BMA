@@ -681,9 +681,9 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           {/* Set Interview */}
           <button
             onClick={() => setShowInterviewSchedule(true)}
-            disabled={!readyToInterview || interviewScheduled}
+            disabled={interviewScheduled}
             className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200
-              ${!readyToInterview || interviewScheduled
+              ${interviewScheduled
                 ? 'bg-gray-400 cursor-not-allowed opacity-80'
                 : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
               }`}
@@ -695,9 +695,9 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           {/* Send Offer */}
           <button
             onClick={() => setShowOfferModal(true)}
-            disabled={!interviewCompleted || offerSent}
+            disabled={offerSent}
             className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200
-              ${!interviewCompleted || offerSent
+              ${offerSent
                 ? 'bg-gray-400 cursor-not-allowed opacity-80'
                 : 'bg-yellow-500 hover:bg-yellow-600 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
               }`}
@@ -709,9 +709,9 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           {/* Onboard Candidate */}
           <button
             onClick={() => setShowOnboardModal(true)}
-            disabled={!interviewCompleted || onboarded}
+            disabled={onboarded}
             className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200
-              ${!interviewCompleted || onboarded
+              ${onboarded
                 ? 'bg-gray-400 cursor-not-allowed opacity-80'
                 : 'bg-purple-600 hover:bg-purple-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
               }`}
