@@ -80,7 +80,7 @@ const CandidatesPage = () => {
         setAllCandidates(candidates);
 
         // Filter only SCREENING stage candidates
-        const screening = candidates.filter(c => c.stage?.toUpperCase() === "SCREENING" || c.stage?.toUpperCase() === "READY_TO_INTERVIEW" || c.stage?.toUpperCase() === "INTERVIEWING");
+        const screening = candidates.filter(c => c.stage?.toUpperCase() === "SCREENING" || c.stage?.toUpperCase() === "READY_TO_INTERVIEW" || c.stage?.toUpperCase() === "INTERVIEWING" || c.stage?.toUpperCase() === "INTERVIEW RESCHEDULED");
         setScreeningCandidates(screening);
 
       } catch (error) {
