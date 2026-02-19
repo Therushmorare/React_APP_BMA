@@ -11,6 +11,7 @@ const InterviewDetailsModal = ({ interview, onClose, onAction }) => {
     if (id) setEmployeeId(id);
   }, []);
 
+  //fixes
   const [activeTab, setActiveTab] = useState('details');
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date(interview.date));
