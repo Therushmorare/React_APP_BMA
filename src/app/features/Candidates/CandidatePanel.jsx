@@ -334,7 +334,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           body: JSON.stringify({
             employee_id: employeeId,
             candidate_id: candidate.id,
-            job_id: candidate.job_id,
+            job_id: candidate.jobCode,
             offer_id: selectedOffer.offer_id,
             company_domain: selectedOffer.office || ""
           }),
