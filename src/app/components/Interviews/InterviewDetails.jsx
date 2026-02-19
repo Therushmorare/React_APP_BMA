@@ -2,6 +2,16 @@ import React, { useState } from 'react';
 import { X, Mail, Phone, FileText, Calendar, Clock, User, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const InterviewDetailsModal = ({ interview, onClose, onAction }) => {
+
+    // ====== Employee ID ======
+    const [employeeId, setEmployeeId] = useState("");
+  
+    useEffect(() => {
+      // Only runs on client
+      const id = sessionStorage.getItem("user_id");
+      if (id) setEmployeeId(id);
+    }, []);
+  
   const [activeTab, setActiveTab] = useState('details');
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date(interview.date));
@@ -43,12 +53,66 @@ const InterviewDetailsModal = ({ interview, onClose, onAction }) => {
     setSelectedDate(newDate);
   };
 
-  const handleReschedule = () => {
-    const formattedDate = selectedDate.toISOString().split('T')[0];
-    console.log('Rescheduling interview to:', formattedDate, selectedTime);
-    onAction(interview.id, 'reschedule', { date: formattedDate, time: selectedTime });
-    setShowCalendar(false);
-    onClose();
+  const handleReschedule = async () => {
+    const token = sessionStorage.getItem("access_token");
+
+    if (!token) {
+      console.error("JWT token missing");
+      alert("Session expired. Please log in again.");
+      return;
+    }
+
+    if (!selectedDate || !selectedTime) {
+      alert("Please select both a date and time.");
+      return;
+    }
+
+    const formattedDate = selectedDate.toISOString().split("T")[0];
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/rescheduleInterview/${employeeId}/${interview.candidateId}/${interview.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            employee_id: employeeId,
+            candidate_id: interview.candidateId,
+            interview_id: interview.id,
+            date: formattedDate,
+            time: selectedTime,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+
+      const data = await response.json();
+      console.log("Interview rescheduled:", data);
+
+      // Update UI immediately
+      onAction(interview.id, "reschedule", {
+        date: formattedDate,
+        time: selectedTime,
+      });
+
+      setShowCalendar(false);
+      onClose();
+
+    } catch (error) {
+      console.error("Reschedule error:", error);
+      alert("Failed to reschedule interview.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(selectedDate);
