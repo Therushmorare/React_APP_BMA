@@ -329,7 +329,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           body: JSON.stringify({
             employee_id: employeeId,
             candidate_id: candidate.id,
-            job_id: selectedOffer.job_id,  // ✅ FIX
+            job_id: candidate.job_id,
             offer_id: selectedOffer.offer_id,
             company_domain: selectedOffer.office || ""
           }),
