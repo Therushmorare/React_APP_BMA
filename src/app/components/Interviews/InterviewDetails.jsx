@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Mail, Phone, FileText, Calendar, Clock, User, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const InterviewDetailsModal = ({ interview, onClose, onAction }) => {
