@@ -39,56 +39,72 @@ const Interviews = () => {
     setError(null);
 
     try {
-      const response = await fetch(
-        "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/allInterviews",
-        {
+      const [interviewsRes, applicantsRes] = await Promise.all([
+        fetch("https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/allInterviews", {
           method: "GET",
           headers: { Accept: "application/json" }
-        }
-      );
+        }),
+        fetch("https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/all_applicants", {
+          method: "GET",
+          headers: { Accept: "application/json" }
+        })
+      ]);
 
-      if (response.status === 404) {
-        // No interviews exist
+      if (!interviewsRes.ok) throw new Error("Failed to fetch interviews");
+      if (!applicantsRes.ok) throw new Error("Failed to fetch applicants");
+
+      const interviewsData = await interviewsRes.json();
+      const applicantsData = await applicantsRes.json();
+
+      if (!Array.isArray(interviewsData) || !Array.isArray(applicantsData)) {
         setInterviews([]);
         setTotalInterviews(0);
         setTotalPages(1);
         return;
       }
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch interviews");
-      }
+      // Create O(1) applicant lookup map
+      const applicantMap = {};
+      applicantsData.forEach(applicant => {
+        applicantMap[applicant.applicant_id] = applicant;
+      });
 
-      const rawData = await response.json();
+      // Merge interviews with applicants
+      const mapped = interviewsData.map(item => {
+        const applicant = applicantMap[item.candidate_id];
 
-      // Backend safety check
-      if (!Array.isArray(rawData)) {
-        setInterviews([]);
-        setTotalInterviews(0);
-        setTotalPages(1);
-        return;
-      }
+        return {
+          id: item.interview_id,
+          candidateId: item.candidate_id,
 
-      //Map backend → frontend structure
-      const mapped = rawData.map(item => ({
-        id: item.interview_id,
-        name: item.candidate_name || "Unknown Candidate",
-        email: item.email || "N/A",
-        phone: item.phone || "N/A",
-        position: item.job_code || "N/A",
-        date: item.date,
-        time: item.time,
-        status: item.status || "Upcoming",
-        interviewer: item.approved_by || "HR",
-        type: "External",
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          item.candidate_name || "Candidate"
-        )}&background=22c55e&color=ffffff&size=128`,
-        notes: item.details || "",
-        resumeUrl: ""
-      }));
+          // From applicant
+          name: applicant
+            ? `${applicant.first_name} ${applicant.last_name}`
+            : "Unknown Candidate",
+          email: applicant?.email || "N/A",
+          phone: applicant?.phone_number || "N/A",
+          city: applicant?.city || "",
+          province: applicant?.province || "",
+          summary: applicant?.professional_summary || "",
 
-      //filtering
+          // From interview
+          position: item.job_code || "N/A",
+          date: item.date,
+          time: item.time,
+          status: item.status || "Upcoming",
+          interviewer: item.approved_by || "HR",
+          type: "External",
+          notes: item.details || "",
+
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            applicant
+              ? `${applicant.first_name} ${applicant.last_name}`
+              : "Candidate"
+          )}&background=22c55e&color=ffffff&size=128`
+        };
+      });
+
+      // Filtering
       let filtered = mapped;
 
       if (search) {
@@ -110,7 +126,7 @@ const Interviews = () => {
         filtered = filtered.filter(i => i.position === filterParams.position);
       }
 
-      // pagination
+      // Pagination
       const startIndex = (page - 1) * INTERVIEWS_PER_PAGE;
       const endIndex = startIndex + INTERVIEWS_PER_PAGE;
 
