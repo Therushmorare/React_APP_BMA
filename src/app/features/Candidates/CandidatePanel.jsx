@@ -276,36 +276,42 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
   useEffect(() => {
     const fetchCandidateOffers = async () => {
       if (!candidate?.id) return;
+
       setLoading(true);
       setError("");
 
       try {
-        const response = await fetch(`https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/myJobOffers/${candidate.id}`);
-        if (!response.ok) throw new Error("Failed to fetch job offers");
+        const response = await fetch(
+          `https://jellyfish-app-z83s2.ondigitalocean.app/api/candidate/myJobOffers/${candidate.id}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch job offers");
+        }
+
         const data = await response.json();
         setOffers(data.offers || []);
+        setSelectedOffer(null); // Reset selection when candidate changes
+
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching offers:", err);
         setError(err.message || "Something went wrong fetching offers");
       } finally {
         setLoading(false);
       }
     };
+
     fetchCandidateOffers();
-  }, [candidate]);
+  }, [candidate?.id]);
 
   // ====== Onboard Candidate ======
   const handleOnboardConfirm = async () => {
     console.log("🔥 Onboard button clicked");
-    const token = sessionStorage.getItem('access_token'); // get JWT token
+
+    const token = sessionStorage.getItem("access_token");
 
     if (!employeeId) {
       setError("Missing employee ID");
-      return;
-    }
-
-    if (!selectedOffer){
-      setError("Offer does not exist");
       return;
     }
 
@@ -314,8 +320,12 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
       return;
     }
 
+    if (!selectedOffer) {
+      setError("Please select an offer before onboarding.");
+      return;
+    }
+
     if (!token) {
-      console.error("JWT token not found in sessionStorage. User might need to log in again.");
       setError("You are not authenticated. Please log in again.");
       return;
     }
@@ -330,26 +340,30 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             employee_id: employeeId,
             candidate_id: candidate.id,
-            job_id: candidate.jobCode,
+            job_id: selectedOffer.job_id,
             offer_id: selectedOffer.offer_id,
-            company_domain: selectedOffer.office || ""
+            company_domain: selectedOffer.office || "",
           }),
         }
       );
 
-      if (!response.ok) throw new Error(await response.text() || "Failed to onboard candidate");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to onboard candidate");
+      }
 
+      // Success state updates
       setShowOnboardModal(false);
-      setOffers([]);
       setOnboarded(true);
       alert("Candidate onboarded successfully!");
+
     } catch (err) {
-      console.error(err);
+      console.error("Onboarding error:", err);
       setError(err.message || "Something went wrong during onboarding");
     } finally {
       setLoading(false);
@@ -908,10 +922,14 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
       {showOnboardModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 px-4">
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md space-y-6 relative">
+
             {/* Header */}
             <div className="flex justify-between items-center border-b border-gray-200 pb-2">
-              <h2 className="text-lg font-semibold text-gray-800">Onboard Candidate</h2>
+              <h2 className="text-lg font-semibold text-gray-800">
+                Onboard Candidate
+              </h2>
               <button
+                type="button"
                 onClick={() => setShowOnboardModal(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
@@ -920,23 +938,61 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
             </div>
 
             <p className="text-gray-600">
-              Are you sure you want to onboard this candidate ? This action cannot be undone.
+              Select the offer you want to finalize for this candidate.
             </p>
+
+            {/* Offer Selection */}
+            {offers.length > 0 ? (
+              <select
+                value={selectedOffer?.offer_id || ""}
+                onChange={(e) => {
+                  const offer = offers.find(
+                    (o) => o.offer_id === e.target.value
+                  );
+                  setSelectedOffer(offer || null);
+                }}
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              >
+                <option value="">Select an offer</option>
+                {offers.map((offer) => (
+                  <option key={offer.offer_id} value={offer.offer_id}>
+                    {offer.job_title || "Offer"} — {offer.salary || "Salary not specified"}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-red-500">
+                No offers available for this candidate.
+              </p>
+            )}
+
+            {error && (
+              <p className="text-sm text-red-500">{error}</p>
+            )}
 
             {/* Buttons */}
             <div className="flex justify-between space-x-3 mt-4">
               <button
+                type="button"
                 onClick={() => setShowOnboardModal(false)}
                 className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 Cancel
               </button>
+
               <button
                 type="button"
                 onClick={handleOnboardConfirm}
-                className="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                disabled={loading || offers.length === 0}
+                className={`flex-1 py-3 rounded-lg font-medium text-white transition-colors
+                  ${
+                    loading || offers.length === 0
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-purple-600 hover:bg-purple-700"
+                  }
+                `}
               >
-                Onboard
+                {loading ? "Processing..." : "Onboard"}
               </button>
             </div>
           </div>
