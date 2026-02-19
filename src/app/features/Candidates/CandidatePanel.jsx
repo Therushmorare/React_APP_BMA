@@ -249,7 +249,12 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`,
           },
-          body: JSON.stringify({ employee_id: employeeId, candidate_id: candidate.id, job_id: candidate.job_id, message: offerDetails }),
+          body: JSON.stringify({ 
+             employee_id: employeeId,
+             candidate_id: candidate.id,
+             job_id: candidate.jobCode, 
+             message: offerDetails 
+            }),
         }
       );
 
