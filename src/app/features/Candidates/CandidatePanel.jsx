@@ -290,7 +290,10 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
         }
 
         const data = await response.json();
-        setOffers(data.offers || []);
+
+        console.log("Fetched offers:", data); // Debugging
+
+        setOffers(data || []); // <-- FIXED
         setSelectedOffer(null); // Reset selection when candidate changes
 
       } catch (err) {
@@ -946,9 +949,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
               <select
                 value={selectedOffer?.offer_id || ""}
                 onChange={(e) => {
-                  const offer = offers.find(
-                    (o) => o.offer_id === e.target.value
-                  );
+                  const offer = offers.find((o) => o.offer_id === e.target.value);
                   setSelectedOffer(offer || null);
                 }}
                 className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -956,7 +957,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
                 <option value="">Select an offer</option>
                 {offers.map((offer) => (
                   <option key={offer.offer_id} value={offer.offer_id}>
-                    {offer.job_title || "Offer"} — {offer.salary || "Salary not specified"}
+                    {`Offer ID: ${offer.offer_id.substring(0, 8)} — ${offer.status}`}
                   </option>
                 ))}
               </select>
