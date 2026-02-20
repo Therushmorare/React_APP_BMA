@@ -41,7 +41,7 @@ const EmployeesPage = () => {
       phone: employee.phone_number,
       jobTitle: employee.job_title || 'N/A',
       department: employee.department || 'N/A',
-      startDate: null, // Backend doesn't provide this
+      startDate: employee.created_at, // Backend doesn't provide this
       status: employee.status || 'Active',
       employmentType: employee.employment_type,
       description: employee.description,
