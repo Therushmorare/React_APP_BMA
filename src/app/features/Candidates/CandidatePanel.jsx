@@ -432,6 +432,55 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
   }
   };
 
+  const handleSendEmail = async () => {
+    setError("");
+    setSuccess("");
+
+    if (!message.trim()) {
+      setError("Please type a message before sending.");
+      return;
+    }
+
+    const token = sessionStorage.getItem("access_token");
+    if (!token) {
+      setError("You are not authenticated. Please log in again.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/sendCandidateMessage",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            candidate_id: candidateId,
+            employee_id: employeeId,
+            message: message,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to send email");
+      }
+
+      setSuccess("Email sent successfully!");
+      setMessage(""); // clear message after sending
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ====== Simulate Interview Completion ======
   const handleSetInterview = () => {
     if (!readyToInterview) return;
@@ -648,40 +697,33 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
               {/* Email Tab */}
               {activeTab === 'email' && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Templates
-                    </label>
-                    <select
-                      value={selectedTemplate}
-                      onChange={(e) => setSelectedTemplate(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-                    >
-                      <option value="">Select template...</option>
-                      {emailTemplates.map(template => (
-                        <option key={template.value} value={template.value}>
-                          {template.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  {selectedTemplate && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h5 className="font-medium text-gray-900">
-                          {emailTemplates.find(t => t.value === selectedTemplate)?.label}
-                        </h5>
-                        <button className="flex items-center space-x-1 px-3 py-1 bg-green-700 text-white rounded text-sm hover:bg-green-800 transition-colors">
-                          <Send size={14} />
-                          <span>Send</span>
-                        </button>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        Template preview will be shown here...
-                      </p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Message
+                      </label>
+                      <textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        rows={5}
+                        placeholder="Type your message here..."
+                        className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
+                      />
                     </div>
-                  )}
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleSendEmail}
+                        disabled={loading || !message.trim()}
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors disabled:opacity-50"
+                      >
+                        <Send size={16} />
+                        <span>{loading ? "Sending..." : "Send"}</span>
+                      </button>
+                    </div>
+
+                    {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+                    {success && <p className="text-green-600 text-sm mt-2">{success}</p>}
                 </div>
               )}
             </div>
