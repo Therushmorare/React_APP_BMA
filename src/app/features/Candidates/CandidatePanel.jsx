@@ -43,6 +43,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
   const [interviewLocation, setInterviewLocation] = useState("");
   const [interviewDetails, setInterviewDetails] = useState("");
   const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
