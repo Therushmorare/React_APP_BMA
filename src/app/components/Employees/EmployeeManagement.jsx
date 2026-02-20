@@ -71,18 +71,72 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
     onClose();
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const fieldsToValidate = ['firstName', 'lastName', 'email', 'jobTitle', 'department'];
     const validationErrors = validateForm(employeeData, fieldsToValidate);
 
-    if (Object.keys(validationErrors).length === 0) {
-      setIsEditing(false);
-      setSaveStatus('success');
-      console.log('Saving employee data:', employeeData);
-      setTimeout(() => setSaveStatus(null), 3000);
-    } else {
+    if (Object.keys(validationErrors).length !== 0) {
       setErrors(validationErrors);
       setSaveStatus('error');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setSaveStatus(null);
+
+      const token = sessionStorage.getItem("access_token");
+      if (!token) {
+        throw new Error("Authentication required. Please log in again.");
+      }
+
+      const payload = {
+        creator_employee_id: sessionStorage.getItem("employee_id"), // adjust if stored elsewhere
+        first_name: employeeData.firstName || "",
+        last_name: employeeData.lastName || "",
+        email: employeeData.email || "",
+        phone_number: employeeData.phone || "",
+        job_title: employeeData.jobTitle || "",
+        department: employeeData.department || "",
+        status: employeeData.status || "ACTIVE",
+        ID_number: employeeData.ID_number || "",
+        date_of_birth: employeeData.dateOfBirth || "",
+        nationality: employeeData.nationality || "",
+        physical_address: employeeData.physicalAddress || "",
+        city: employeeData.city || "",
+        province: employeeData.province || "",
+        postal_code: employeeData.postalCode || "",
+        employment_type: employeeData.employmentType || "",
+        description: employeeData.description || ""
+      };
+
+      const response = await fetch(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/updateEmployee/${employeeData.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to update employee");
+      }
+
+      setIsEditing(false);
+      setSaveStatus('success');
+
+      setTimeout(() => setSaveStatus(null), 3000);
+
+    } catch (error) {
+      console.error("Update error:", error);
+      setSaveStatus('error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -147,7 +201,7 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
                 const hasErrors = Object.keys(errors).some(key => {
                   if (tab.id === 'personal') return ['firstName', 'lastName', 'email', 'phone'].includes(key);
                   if (tab.id === 'job') return ['jobTitle', 'department', 'startDate'].includes(key);
-                  if (tab.id === 'payroll') return ['salary', 'bankAccount', 'taxNumber'].includes(key);
+                  {/*if (tab.id === 'payroll') return ['salary', 'bankAccount', 'taxNumber'].includes(key);*/}
                   return false;
                 });
 
@@ -217,7 +271,7 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
               </div>
             )}
 
-            {activeTab === 'payroll' && (
+            {/*{activeTab === 'payroll' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-gray-900">Payroll Information</h4>
@@ -237,7 +291,7 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
                   onValidate={handleValidateField}
                 />
               </div>
-            )}
+            )}*/}
 
             {activeTab === 'settings' && (
               <div className="space-y-6">
