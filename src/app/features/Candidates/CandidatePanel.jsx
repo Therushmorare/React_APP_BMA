@@ -108,6 +108,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
 
   // ====== Submit Evaluation ======
   const handleEvaluation = async () => {
+    console.log("handleEvaluation triggered");
     const token = sessionStorage.getItem('access_token'); // get JWT token
 
     if (!token) {
@@ -634,10 +635,11 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
                 <div className="pt-4 border-t border-gray-200">
                   <button
                     type="button"
-                    onClick={handleEvaluation}
-                    className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium"
+                    onClick={(e) => { e.preventDefault(); handleEvaluation(); }}
+                    disabled={!employeeId || !candidate?.id || !candidate?.job_id || loading}
+                    className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium disabled:opacity-50"
                   >
-                    Submit Changes
+                    {loading ? "Submitting..." : "Submit Changes"}
                   </button>
                 </div>
               </div>
