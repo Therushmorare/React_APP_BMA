@@ -633,6 +633,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
                 {/* Submit Button */}
                 <div className="pt-4 border-t border-gray-200">
                   <button
+                    type="button"
                     onClick={handleEvaluation}
                     className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium"
                   >
