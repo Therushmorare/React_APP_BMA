@@ -30,31 +30,30 @@ const DocumentsModal = ({ onClose }) => {
       setIsLoading(true);
       setError("");
 
-      // 🔹 Replace with your real API endpoint
-      const response = await axios.get("https://jellyfish-app-z83s2.ondigitalocean.app/api/admin/allDocuments");
+      const response = await axios.get(
+        "https://jellyfish-app-z83s2.ondigitalocean.app/api/admin/allDocuments"
+      );
 
-      const docs = response.data || [];
+      // Map API response to frontend table format
+      const docs = response.data.map((doc) => ({
+        id: doc.qualification_id,
+        name: doc.type,
+        category: doc.type,
+        size: "-", // you can calculate size if needed
+        uploaded_by: doc.applicant_id,
+        file_url: doc.document,
+      }));
 
       setDocuments(docs);
       setFilteredDocs(docs);
 
-      // Extract categories
-      const uniqueCategories = [
-        "all",
-        ...new Set(docs.map((doc) => doc.category)),
-      ];
+      const uniqueCategories = ["all", ...new Set(docs.map((d) => d.category))];
       setCategories(uniqueCategories);
-
-      // Calculate stats
-      const totalSizeBytes = docs.reduce(
-        (sum, doc) => sum + (doc.size_bytes || 0),
-        0
-      );
 
       setStats({
         total_documents: docs.length,
         total_categories: uniqueCategories.length - 1,
-        total_size: formatFileSize(totalSizeBytes),
+        total_size: "-", // API doesn’t return size
       });
     } catch (err) {
       setError("Failed to load documents.");
@@ -62,7 +61,7 @@ const DocumentsModal = ({ onClose }) => {
       setIsLoading(false);
     }
   };
-
+  
   const filterDocuments = () => {
     let filtered = [...documents];
 
