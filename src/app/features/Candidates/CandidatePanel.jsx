@@ -117,7 +117,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
       return;
     }
 
-    if (!employeeId || !candidate?.id || !candidate?.job_id) {
+    if (!employeeId || !candidate?.id || !candidate?.jobCode) {
       setError("Missing required IDs for submission");
       return;
     }
