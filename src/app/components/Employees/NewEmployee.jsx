@@ -88,22 +88,47 @@ const NewEmployee = ({ isOpen, onClose, creatorEmployeeId }) => {
         description: formData.description
       };
 
-      const response = await fetch('https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/addNewEmployee', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // add Authorization header here if you use JWT
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const response = await fetch(
+        "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/addNewEmployee",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
-      const data = await response.json();
+      // 🔎 Always read raw response first
+      const responseText = await response.text();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to create employee");
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        // Server returned HTML or plain text
+        console.error("Non-JSON response from server:", responseText);
+        throw new Error(
+          `Server returned non-JSON response (${response.status}). Check backend logs.`
+        );
       }
 
+      // 🔎 Log everything during development
+      console.log("Status:", response.status);
+      console.log("Response Data:", data);
+
+      if (!response.ok) {
+        // Show full backend error if available
+        throw new Error(
+          data.message ||
+          data.error ||
+          JSON.stringify(data) ||
+          `Server error (${response.status})`
+        );
+      }
+      
       setSubmittedData(data);
       setShowManagement(true);
 
