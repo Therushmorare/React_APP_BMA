@@ -78,7 +78,7 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
       setSaveStatus(null);
 
       const token = sessionStorage.getItem("access_token");
-      const creatorId = sessionStorage.getItem("employee_id");
+      const creatorId = sessionStorage.getItem("user_id");
 
       if (!token) throw new Error("Authentication required.");
 
