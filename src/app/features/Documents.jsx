@@ -31,7 +31,7 @@ const DocumentsModal = ({ onClose }) => {
       setError("");
 
       // 🔹 Replace with your real API endpoint
-      const response = await axios.get("https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/documents");
+      const response = await axios.get("https://jellyfish-app-z83s2.ondigitalocean.app/api/admin/allDocuments");
 
       const docs = response.data || [];
 
