@@ -9,15 +9,14 @@ import EmployeeManagement from './EmployeeManagement';
 import { JOB_TITLES, DEPARTMENTS, EMPLOYEE_STATUSES } from '@/app/constants/employees/employeeConstants';
 
 const NewEmployee = ({ isOpen, onClose, creatorEmployeeId }) => {
-  // ====== Employee ID ======
+
   const [employeeId, setEmployeeId] = useState("");
-  
+
   useEffect(() => {
-    // Only runs on client
     const id = sessionStorage.getItem("user_id");
     if (id) setEmployeeId(id);
   }, []);
-  
+
   const [showManagement, setShowManagement] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -59,7 +58,14 @@ const NewEmployee = ({ isOpen, onClose, creatorEmployeeId }) => {
       return;
     }
 
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.jobTitle || !formData.department) {
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !formData.jobTitle ||
+      !formData.department ||
+      !formData.startDate
+    ) {
       setError("Please fill in all required fields");
       return;
     }
@@ -100,27 +106,19 @@ const NewEmployee = ({ isOpen, onClose, creatorEmployeeId }) => {
         }
       );
 
-      // 🔎 Always read raw response first
       const responseText = await response.text();
-
       let data;
 
       try {
         data = JSON.parse(responseText);
       } catch (e) {
-        // Server returned HTML or plain text
         console.error("Non-JSON response from server:", responseText);
         throw new Error(
           `Server returned non-JSON response (${response.status}). Check backend logs.`
         );
       }
 
-      // 🔎 Log everything during development
-      console.log("Status:", response.status);
-      console.log("Response Data:", data);
-
       if (!response.ok) {
-        // Show full backend error if available
         throw new Error(
           data.message ||
           data.error ||
@@ -128,7 +126,7 @@ const NewEmployee = ({ isOpen, onClose, creatorEmployeeId }) => {
           `Server error (${response.status})`
         );
       }
-      
+
       setSubmittedData(data);
       setShowManagement(true);
 
@@ -203,6 +201,13 @@ const NewEmployee = ({ isOpen, onClose, creatorEmployeeId }) => {
                 onChange={(e) => handleFormChange('dateOfBirth', e.target.value)}
               />
             </FormField>
+
+            <FormField label="Nationality">
+              <Input
+                value={formData.nationality}
+                onChange={(e) => handleFormChange('nationality', e.target.value)}
+              />
+            </FormField>
           </div>
 
           {/* Contact */}
@@ -233,6 +238,29 @@ const NewEmployee = ({ isOpen, onClose, creatorEmployeeId }) => {
                 onChange={(e) => handleFormChange('physicalAddress', e.target.value)}
               />
             </FormField>
+
+            <div className="grid grid-cols-3 gap-3">
+              <FormField label="City">
+                <Input
+                  value={formData.city}
+                  onChange={(e) => handleFormChange('city', e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Province">
+                <Input
+                  value={formData.province}
+                  onChange={(e) => handleFormChange('province', e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Postal Code">
+                <Input
+                  value={formData.postalCode}
+                  onChange={(e) => handleFormChange('postalCode', e.target.value)}
+                />
+              </FormField>
+            </div>
           </div>
 
           {/* Job Info */}
