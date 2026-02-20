@@ -1,68 +1,60 @@
-import React, { useState } from 'react';
-import { User, Briefcase, DollarSign, Settings, Edit2, Trash2, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Briefcase, Settings, Edit2, Trash2, Loader } from 'lucide-react';
 import SidePanel from '@/app/features/Employees/SidePanel';
-import { generateAvatar } from '@/app/utils/formatters';
+import { generateAvatar, formatDate } from '@/app/utils/formatters';
 import EmployeeAvatar from '@/app/features/Employees/EmployeeAvatar';
 import PersonalInfoForm from "@/app/features/Employees/PersonalInfo";
 import JobInfoForm from '@/app/features/Employees/JobInfo';
-import PayrollForm from '@/app/features/Employees/PayrollForm';
 import { validateField, validateForm } from '@/app/utils/validation';
-import { formatDate } from '@/app/utils/formatters';
 import Button from '@/app/features/Employees/Button';
 
 const EmployeeManagement = ({ isOpen, onClose, formData }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [employeeData, setEmployeeData] = useState(null);
   const [errors, setErrors] = useState({});
   const [saveStatus, setSaveStatus] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen && formData) {
       setIsLoading(true);
-      setTimeout(() => {
-        const processedData = { ...formData };
 
-        if (formData.name && !formData.firstName && !formData.lastName) {
-          const nameParts = formData.name.split(' ');
-          processedData.firstName = nameParts[0] || '';
-          processedData.lastName = nameParts.slice(1).join(' ') || '';
-        }
+      const processedData = { ...formData };
 
-        const firstName = processedData.firstName || '';
-        const lastName = processedData.lastName || '';
-        processedData.avatar = generateAvatar(firstName, lastName);
-        
-        setEmployeeData({
-          ...processedData,
-          id: processedData.id || Math.random().toString(12).substr(2, 9),
-          createdAt: processedData.createdAt || new Date().toISOString(),
-          status: processedData.status?.toLowerCase() || 'active',
-          salary: processedData.salary || '',
-          bankAccount: processedData.bankAccount || '',
-          taxNumber: processedData.taxNumber || ''
-        });
-        setIsLoading(false);
-      }, 500);
+      if (formData.name && !formData.firstName && !formData.lastName) {
+        const nameParts = formData.name.split(' ');
+        processedData.firstName = nameParts[0] || '';
+        processedData.lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      const firstName = processedData.firstName || '';
+      const lastName = processedData.lastName || '';
+
+      setEmployeeData({
+        ...processedData,
+        avatar: generateAvatar(firstName, lastName),
+        id: processedData.id || Math.random().toString(12).substr(2, 9),
+        createdAt: processedData.createdAt || new Date().toISOString(),
+        status: processedData.status || 'ACTIVE'
+      });
+
+      setIsLoading(false);
     }
   }, [isOpen, formData]);
 
   const handleValidateField = (field, value) => {
     const error = validateField(field, value);
     setErrors(prev => {
-      const newErrors = { ...prev };
-      if (error) {
-        newErrors[field] = error;
-      } else {
-        delete newErrors[field];
-      }
-      return newErrors;
+      const updated = { ...prev };
+      if (error) updated[field] = error;
+      else delete updated[field];
+      return updated;
     });
   };
 
   const handleClose = () => {
-    setIsLoading(true);
     setActiveTab('personal');
     setIsEditing(false);
     setEmployeeData(null);
@@ -82,23 +74,23 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
     }
 
     try {
-      setIsLoading(true);
+      setIsSaving(true);
       setSaveStatus(null);
 
       const token = sessionStorage.getItem("access_token");
-      if (!token) {
-        throw new Error("Authentication required. Please log in again.");
-      }
+      const creatorId = sessionStorage.getItem("employee_id");
+
+      if (!token) throw new Error("Authentication required.");
 
       const payload = {
-        creator_employee_id: sessionStorage.getItem("employee_id"), // adjust if stored elsewhere
+        creator_employee_id: creatorId,
         first_name: employeeData.firstName || "",
         last_name: employeeData.lastName || "",
         email: employeeData.email || "",
         phone_number: employeeData.phone || "",
         job_title: employeeData.jobTitle || "",
         department: employeeData.department || "",
-        status: employeeData.status || "ACTIVE",
+        status: (employeeData.status || "ACTIVE").toUpperCase(),
         ID_number: employeeData.ID_number || "",
         date_of_birth: employeeData.dateOfBirth || "",
         nationality: employeeData.nationality || "",
@@ -116,27 +108,26 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload)
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || "Failed to update employee");
+        throw new Error(errorText || "Update failed");
       }
 
       setIsEditing(false);
-      setSaveStatus('success');
-
+      setSaveStatus("success");
       setTimeout(() => setSaveStatus(null), 3000);
 
     } catch (error) {
       console.error("Update error:", error);
-      setSaveStatus('error');
+      setSaveStatus("error");
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -145,18 +136,18 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
       const updated = { ...prev, [field]: value };
 
       if (field === 'firstName' || field === 'lastName') {
-        const firstName = field === 'firstName' ? value : prev.firstName;
-        const lastName = field === 'lastName' ? value : prev.lastName;
-        updated.avatar = generateAvatar(firstName, lastName);
+        updated.avatar = generateAvatar(
+          field === 'firstName' ? value : prev.firstName,
+          field === 'lastName' ? value : prev.lastName
+        );
       }
-      
+
       return updated;
     });
   };
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this employee account? This action cannot be undone.')) {
-      console.log('Deleting employee:', employeeData.id);
+    if (window.confirm('Are you sure you want to delete this employee account?')) {
       handleClose();
     }
   };
@@ -164,7 +155,6 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
   const tabs = [
     { id: 'personal', label: 'Personal Information', icon: User },
     { id: 'job', label: 'Job Information', icon: Briefcase },
-    { id: 'payroll', label: 'Payroll', icon: DollarSign },
     { id: 'settings', label: 'Account Settings', icon: Settings }
   ];
 
@@ -174,16 +164,17 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
     <SidePanel isOpen={isOpen} onClose={handleClose} title="Employee Management">
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader className="animate-spin mx-auto mb-4 text-green-700" size={32} />
-            <p className="text-gray-600">Processing employee information...</p>
-          </div>
+          <Loader className="animate-spin text-green-700" size={32} />
         </div>
       ) : (
         <>
+          {/* Header */}
           <div className="p-6 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center space-x-4">
-              <EmployeeAvatar src={employeeData?.avatar} name={`${employeeData?.firstName} ${employeeData?.lastName}`} />
+              <EmployeeAvatar
+                src={employeeData?.avatar}
+                name={`${employeeData?.firstName} ${employeeData?.lastName}`}
+              />
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
                   {employeeData?.firstName} {employeeData?.lastName}
@@ -194,137 +185,109 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
             </div>
           </div>
 
-          <div className="border-b border-gray-200">
-            <div className="flex space-x-0">
-              {tabs.map(tab => {
-                const Icon = tab.icon;
-                const hasErrors = Object.keys(errors).some(key => {
-                  if (tab.id === 'personal') return ['firstName', 'lastName', 'email', 'phone'].includes(key);
-                  if (tab.id === 'job') return ['jobTitle', 'department', 'startDate'].includes(key);
-                  {/*if (tab.id === 'payroll') return ['salary', 'bankAccount', 'taxNumber'].includes(key);*/}
-                  return false;
-                });
-
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
-                      activeTab === tab.id
-                        ? 'border-green-700 text-green-700'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <Icon size={16} />
-                    <span className="hidden lg:inline">{tab.label}</span>
-                    {hasErrors && (
-                      <div className="w-2 h-2 bg-red-500 rounded-full absolute top-1 right-1"></div>
-                    )}
-                  </button>
-                );
-              })}
+          {/* Save Feedback */}
+          {saveStatus === "success" && (
+            <div className="mx-6 mt-4 p-3 bg-green-100 text-green-800 rounded text-sm">
+              Employee updated successfully.
             </div>
+          )}
+          {saveStatus === "error" && (
+            <div className="mx-6 mt-4 p-3 bg-red-100 text-red-800 rounded text-sm">
+              Failed to update employee.
+            </div>
+          )}
+
+          {/* Tabs */}
+          <div className="border-b border-gray-200 flex">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              const hasErrors = Object.keys(errors).some(key => {
+                if (tab.id === 'personal') return ['firstName','lastName','email','phone'].includes(key);
+                if (tab.id === 'job') return ['jobTitle','department'].includes(key);
+                return false;
+              });
+
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 relative ${
+                    activeTab === tab.id
+                      ? 'border-green-700 text-green-700'
+                      : 'border-transparent text-gray-500'
+                  }`}
+                >
+                  <Icon size={16} />
+                  <span>{tab.label}</span>
+                  {hasErrors && (
+                    <div className="w-2 h-2 bg-red-500 rounded-full absolute top-1 right-1"></div>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
+          {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            {activeTab === 'personal' && (
+            {(activeTab === 'personal' || activeTab === 'job') && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-gray-900">Personal Information</h4>
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium text-gray-900">
+                    {activeTab === 'personal' ? 'Personal Information' : 'Job Information'}
+                  </h4>
                   <button
                     onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-green-700 text-white rounded hover:bg-green-800 transition-colors"
+                    disabled={isSaving}
+                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-green-700 text-white rounded hover:bg-green-800 disabled:opacity-50"
                   >
-                    <Edit2 size={14} />
-                    <span>{isEditing ? 'Save' : 'Edit'}</span>
+                    {isSaving ? (
+                      <Loader size={14} className="animate-spin" />
+                    ) : (
+                      <Edit2 size={14} />
+                    )}
+                    <span>
+                      {isEditing ? (isSaving ? "Saving..." : "Save") : "Edit"}
+                    </span>
                   </button>
                 </div>
-                <PersonalInfoForm
-                  data={employeeData}
-                  errors={errors}
-                  isEditing={isEditing}
-                  onChange={handleDataChange}
-                  onValidate={handleValidateField}
-                />
+
+                {activeTab === 'personal' ? (
+                  <PersonalInfoForm
+                    data={employeeData}
+                    errors={errors}
+                    isEditing={isEditing}
+                    onChange={handleDataChange}
+                    onValidate={handleValidateField}
+                  />
+                ) : (
+                  <JobInfoForm
+                    data={employeeData}
+                    errors={errors}
+                    isEditing={isEditing}
+                    onChange={handleDataChange}
+                    onValidate={handleValidateField}
+                  />
+                )}
               </div>
             )}
-
-            {activeTab === 'job' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-gray-900">Job Information</h4>
-                  <button
-                    onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-green-700 text-white rounded hover:bg-green-800 transition-colors"
-                  >
-                    <Edit2 size={14} />
-                    <span>{isEditing ? 'Save' : 'Edit'}</span>
-                  </button>
-                </div>
-                <JobInfoForm
-                  data={employeeData}
-                  errors={errors}
-                  isEditing={isEditing}
-                  onChange={handleDataChange}
-                  onValidate={handleValidateField}
-                />
-              </div>
-            )}
-
-            {/*{activeTab === 'payroll' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-gray-900">Payroll Information</h4>
-                  <button
-                    onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-green-700 text-white rounded hover:bg-green-800 transition-colors"
-                  >
-                    <Edit2 size={14} />
-                    <span>{isEditing ? 'Save' : 'Edit'}</span>
-                  </button>
-                </div>
-                <PayrollForm
-                  data={employeeData}
-                  errors={errors}
-                  isEditing={isEditing}
-                  onChange={handleDataChange}
-                  onValidate={handleValidateField}
-                />
-              </div>
-            )}*/}
 
             {activeTab === 'settings' && (
               <div className="space-y-6">
-                <h4 className="font-medium text-gray-900">Account Settings</h4>
-                
-                <div className="space-y-6">
-                  <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
-                    <h5 className="font-medium text-blue-900 mb-2">Account Information</h5>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-blue-700">Employee ID:</span>
-                        <span className="text-blue-900 font-mono">{employeeData?.id}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-blue-700">Created:</span>
-                        <span className="text-blue-900">{formatDate(employeeData?.createdAt)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-blue-700">Last Modified:</span>
-                        <span className="text-blue-900">Today</span>
-                      </div>
-                    </div>
+                <div className="p-4 border rounded bg-blue-50">
+                  <div className="flex justify-between text-sm">
+                    <span>Employee ID:</span>
+                    <span className="font-mono">{employeeData?.id}</span>
                   </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Created:</span>
+                    <span>{formatDate(employeeData?.createdAt)}</span>
+                  </div>
+                </div>
 
-                  <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                    <h5 className="font-medium text-red-900 mb-2">Danger Zone</h5>
-                    <p className="text-sm text-red-700 mb-4">
-                      Once you delete this employee account, all associated data will be permanently removed. This action cannot be undone.
-                    </p>
-                    <Button variant="danger" icon={Trash2} onClick={handleDelete}>
-                      Delete Employee Account
-                    </Button>
-                  </div>
+                <div className="p-4 border rounded bg-red-50">
+                  <Button variant="danger" icon={Trash2} onClick={handleDelete}>
+                    Delete Employee Account
+                  </Button>
                 </div>
               </div>
             )}
