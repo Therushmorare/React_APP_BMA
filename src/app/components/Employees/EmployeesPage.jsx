@@ -162,7 +162,7 @@ const EmployeesPage = () => {
                     <th className="text-left p-4 font-semibold text-gray-700">Contact</th>
                     <th className="text-left p-4 font-semibold text-gray-700">Job Title</th>
                     <th className="text-left p-4 font-semibold text-gray-700">Department</th>
-                    <th className="text-left p-4 font-semibold text-gray-700">Start Date</th>
+                    <th className="text-left p-4 font-semibold text-gray-700">Employee Number</th>
                     <th className="text-left p-4 font-semibold text-gray-700">Status</th>
                     <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
                   </tr>
