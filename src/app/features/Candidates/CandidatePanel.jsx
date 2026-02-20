@@ -134,7 +134,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-          body: JSON.stringify({ employee_id: employeeId, candidate_id: candidate.id, job_id: candidate.job_id, notes, rating }),
+          body: JSON.stringify({ employee_id: employeeId, candidate_id: candidate.id, job_id: candidate.jobCode, notes, rating }),
         }
       );
 
@@ -636,7 +636,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
                   <button
                     type="button"
                     onClick={(e) => { e.preventDefault(); handleEvaluation(); }}
-                    disabled={!employeeId || !candidate?.id || !candidate?.job_id || loading}
+                    disabled={!employeeId || !candidate?.id || !candidate?.jobCode || loading}
                     className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium disabled:opacity-50"
                   >
                     {loading ? "Submitting..." : "Submit Changes"}
