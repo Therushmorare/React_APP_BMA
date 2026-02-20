@@ -28,7 +28,7 @@ const EmployeeTableRow = React.memo(({ employee, onView, onEdit, onDelete }) => 
       </span>
     </td>
     <td className="p-3">
-      <p className="text-xs text-gray-700">{formatDate(employee.employeeNumber)}</p>
+      <p className="text-xs text-gray-700">{employee.employeeNumber}</p>
     </td>
     <td className="p-3">
       <StatusBadge status={employee.status} />
