@@ -146,7 +146,7 @@ const InterviewDetailsModal = ({ interview, onClose, onAction }) => {
           {/* Tabs */}
           <div className="border-b border-gray-200">
             <div className="flex space-x-0">
-              {['details','evaluation'].map(tab => (
+              {['details'].map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -267,51 +267,10 @@ const InterviewDetailsModal = ({ interview, onClose, onAction }) => {
               </div>
             )}
 
-            {activeTab==='evaluation' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                  <textarea
-                    value={notes}
-                    onChange={(e)=>setNotes(e.target.value)}
-                    rows={4}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-700 focus:ring-2 focus:ring-green-100"
-                    placeholder="Add your evaluation notes here..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
-                  <div className="flex space-x-1">
-                    {[1,2,3,4,5].map(star=>(
-                      <button key={star} onClick={()=>setRating(star)} className={`p-1 transition-colors ${star<=rating?'text-yellow-500':'text-gray-300'}`}>
-                        <Star size={20} fill={star<=rating?'currentColor':'none'} />
-                      </button>
-                    ))}
-                    <span className="ml-2 text-sm text-gray-600">{rating>0?`${rating}/5`:'No rating'}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200">
-          <div className="flex space-x-3">
-            <button
-              onClick={()=>{onAction(interview.id,'complete'); onClose();}}
-              disabled={interview.status==='Completed'}
-              className="flex-1 bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >Mark Complete</button>
-
-            <button
-              onClick={()=>{onAction(interview.id,'cancel'); onClose();}}
-              disabled={interview.status==='Completed'||interview.status==='Cancelled'}
-              className="flex-1 border border-red-300 text-red-700 py-3 rounded-lg hover:bg-red-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >Cancel Interview</button>
-          </div>
-        </div>
       </div>
     </div>
   );
