@@ -68,7 +68,7 @@ const NewEmployee = ({ isOpen, onClose, creatorEmployeeId }) => {
       setLoading(true);
 
       const payload = {
-        creator_employee_id: creatorEmployeeId,
+        creator_employee_id: employeeId,
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
