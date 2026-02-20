@@ -461,7 +461,7 @@ const CandidateDetailsPanel = ({ candidate, isOpen, onClose, onSuccess }) => {
             "Authorization": `Bearer ${token}`,
           },
           body: JSON.stringify({
-            candidate_id: candidateId,
+            candidate_id: candidate.id,
             employee_id: employeeId,
             message: message,
           }),
