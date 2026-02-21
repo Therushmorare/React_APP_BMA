@@ -7,6 +7,7 @@ import Modal from '../Recruitment/Modal';
 import FeedbackModal from './Feedback';
 import PipelineModal from './Pipeline';
 import JobDetailsModal from './JobDetails'; 
+import DeleteJobModal from './deleteJob';
 import NewJobPost from '@/app/features/Recruitment/NewJobPost'
 
 const JobPosts = () => {
@@ -215,6 +216,21 @@ const JobPosts = () => {
           onSave={handleNewJobSave}
         />
       </Modal>
+
+      <Modal
+        isOpen={showModal && modalType === 'deleteJob'}
+        onClose={() => setShowModal(false)}
+        title={`Delete Job Post - ${selectedJob?.title}`}
+        position="form"
+      >
+        <DeleteJobModal
+          selectedJob={selectedJob}
+          isOpen={showDelete}
+          onClose={() => setShowDelete(false)}
+          onDeleted={handleJobDeleted}
+        />
+      </Modal>
+
 
       <Modal
         isOpen={showModal && modalType === 'editJob'}

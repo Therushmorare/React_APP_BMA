@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building, Users, MoreVertical, Eye, BarChart3, FileText } from 'lucide-react';
+import { Building, Users, MoreVertical, Eye, BarChart3, FileText, Trash2 } from 'lucide-react';
 
 const JobCard = ({
   job,
@@ -85,6 +85,17 @@ const JobCard = ({
                   >
                     <FileText size={15} className="mr-3 text-gray-500" />
                     Full Job Post
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMenuClick(job, 'deleteJob');
+                    }}
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left transition"
+                  >
+                    <Trash2 size={15} className="mr-3 text-gray-500" />
+                    Delete Job Post
                   </button>
 
                 </div>
