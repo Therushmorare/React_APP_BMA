@@ -13,7 +13,7 @@ const PipelineModal = ({ selectedJob }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!selectedJob?.job_id) return;
+    if (!selectedJob?.id) return;
 
     const fetchPipelineData = async () => {
       setLoading(true);
