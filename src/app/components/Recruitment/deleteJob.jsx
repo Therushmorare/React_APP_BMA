@@ -3,14 +3,13 @@ import { X, Trash2 } from "lucide-react";
 
 const DeleteJobModal = ({
   selectedJob,
-  isOpen,
   onClose,
-  onDeleted, // callback to refresh list
+  onDeleted,
 }) => {
   const [loading, setLoading] = useState(false);
 
-  if (!isOpen || !selectedJob) return null;
-
+  if (!selectedJob) return null;
+  
   const handleDelete = async () => {
     const employeeId = sessionStorage.getItem("user_id");
     const token = sessionStorage.getItem("access_token");

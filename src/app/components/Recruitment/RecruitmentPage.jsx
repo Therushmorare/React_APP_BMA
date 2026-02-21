@@ -223,14 +223,12 @@ const JobPosts = () => {
         title={`Delete Job Post - ${selectedJob?.title}`}
         position="form"
       >
-        <DeleteJobModal
-          selectedJob={selectedJob}
-          isOpen={showDelete}
-          onClose={() => setShowDelete(false)}
-          onDeleted={handleJobDeleted}
-        />
+      <DeleteJobModal
+        selectedJob={selectedJob}
+        onClose={() => setShowModal(false)}
+        onDeleted={handleJobDeleted}
+      />
       </Modal>
-
 
       <Modal
         isOpen={showModal && modalType === 'editJob'}
