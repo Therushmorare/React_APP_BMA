@@ -11,7 +11,6 @@ const PipelineModal = ({ selectedJob }) => {
   });
 
   const [loading, setLoading] = useState(false);
-
   useEffect(() => {
     if (!selectedJob?.id) return;
 
@@ -38,9 +37,9 @@ const PipelineModal = ({ selectedJob }) => {
           }
         };
 
-        // 🔥 Fetch all data
         const interviewsRaw = await safeFetch(`${base}/api/hr/allInterviews`);
         const offersRaw = await safeFetch(`${base}/api/hr/allOffers`);
+        const applicationsRaw = await safeFetch(`${base}/api/hr/all_applicants`);
 
         const interviews = Array.isArray(interviewsRaw)
           ? interviewsRaw
@@ -50,23 +49,28 @@ const PipelineModal = ({ selectedJob }) => {
           ? offersRaw
           : offersRaw?.data || [];
 
-        // 🔥 Applicants from selected job (if already passed in)
-        const totalApplicants = selectedJob?.applicants || 0;
+        const applications = Array.isArray(applicationsRaw)
+          ? applicationsRaw
+          : applicationsRaw?.data || [];
 
-        // 🔥 In Review = job.status === REVIEW
-        const inReview =
-          selectedJob?.status?.toUpperCase() === "REVIEW"
-            ? totalApplicants
-            : 0;
+        // Filter applicants for this job
+        const jobApplicants = applications.filter(
+          (a) => String(a.job_id) === String(selectedJob.id)
+        );
 
-        // 🔥 Interviews filtered by job_id
-        const totalInterviews = interviews.filter(
-          (i) => i.job_id === selectedJob.job_id
+        const totalApplicants = jobApplicants.length;
+
+        // Count screening/review
+        const inReview = jobApplicants.filter(
+          (a) => a.status?.toUpperCase() === "SCREENING"
         ).length;
 
-        // 🔥 Offers filtered by job_id
+        const totalInterviews = interviews.filter(
+          (i) => String(i.job_id) === String(selectedJob.id)
+        ).length;
+
         const totalOffers = offers.filter(
-          (o) => o.job_id === selectedJob.job_id
+          (o) => String(o.job_id) === String(selectedJob.id)
         ).length;
 
         setStats({

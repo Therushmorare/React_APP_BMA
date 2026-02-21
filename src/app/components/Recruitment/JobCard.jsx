@@ -54,7 +54,7 @@ const JobCard = ({
               <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-200 z-20">
                 <div className="py-2">
 
-                  <button
+                  {/*<button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleMenuClick(job, 'feedback');
@@ -63,7 +63,7 @@ const JobCard = ({
                   >
                     <Eye size={15} className="mr-3 text-gray-500" />
                     View Feedback
-                  </button>
+                  </button>*/}
 
                   <button
                     onClick={(e) => {
