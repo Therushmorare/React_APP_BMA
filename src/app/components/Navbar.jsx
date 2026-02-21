@@ -244,8 +244,20 @@ const Navbar = () => {
                 <div className="border-t border-gray-100 pt-2">
                   <button
                     onClick={() => {
-                      console.log('Logout clicked');
+                      // Clear all sessionStorage items
+                      sessionStorage.removeItem("access_token");
+                      sessionStorage.removeItem("employee_email");
+                      sessionStorage.removeItem("user_id");
+                      // Optional: clear everything just in case
+                      // sessionStorage.clear();
+
+                      // Close profile dropdown
                       setShowProfileDropdown(false);
+
+                      // Redirect to login page
+                      if (typeof window !== "undefined") {
+                        window.location.href = "/login"; // replace with your login route
+                      }
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-red-50 transition-colors duration-150 group"
                   >
@@ -256,7 +268,7 @@ const Navbar = () => {
                       </span>
                     </div>
                   </button>
-                </div>
+                </div>                
               </div>
             )}
           </div>
