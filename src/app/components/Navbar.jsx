@@ -5,6 +5,7 @@ import { Search, Bell, User, Settings, Shield, HelpCircle, Activity, LogOut} fro
 import SettingsPanel from '../features/Settings';
 import DocumentsModal from '../features/Documents';
 import NotificationsModal from '../features/Notifications/NotificationsModal';
+import axios from "axios";
 
 const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -14,10 +15,51 @@ const Navbar = () => {
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const dropdownRef = useRef(null);
 
-  const userAvatar = "";
-  const userName = "Nombuso Simelane";
-  const userEmail = "nombuso.simelane@email.com";
-  
+  const id = sessionStorage.getItem("user_id");
+
+  const [userAvatar, setUserAvatar] = useState("");
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    const fetchHRMembers = async () => {
+      try {
+        const response = await axios.get(
+          "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/allHRMembers",
+          {
+            headers: {
+              Accept: "application/json",
+              // If JWT required:
+              // Authorization: `Bearer ${token}`
+            },
+          }
+        );
+
+        const hrMembers = response.data;
+
+        // ✅ Find logged-in HR member
+        const currentUser = hrMembers.find(
+          (member) => member.employee_id === id
+        );
+
+        if (currentUser) {
+          setUserName(`${currentUser.first_name} ${currentUser.last_name}`);
+          setUserEmail(currentUser.email);
+
+          // Optional avatar logic (if you later add profile pictures)
+          setUserAvatar("");
+        }
+
+      } catch (error) {
+        console.error("Error fetching HR members:", error);
+      }
+    };
+
+    if (id) {
+      fetchHRMembers();
+    }
+  }, [id]);
+
   const getInitials = (name) => {
     return name
       .split(' ')
