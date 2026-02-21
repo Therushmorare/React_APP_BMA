@@ -23,175 +23,195 @@ const ReportsPage = () => {
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
 
-  const fetchReportData = async () => {
-    setLoading(true);
-    setError(null);
+const fetchReportData = async () => {
+  setLoading(true);
+  setError(null);
 
-    try {
-      const base = "https://jellyfish-app-z83s2.ondigitalocean.app";
+  try {
+    const base = "https://jellyfish-app-z83s2.ondigitalocean.app";
+    const token = sessionStorage.getItem("access_token");
 
-      const safeFetch = async (url) => {
-        try {
-          const res = await fetch(url);
-          if (!res.ok) return [];
-          return await res.json();
-        } catch {
-          return [];
-        }
-      };
+    const safeFetch = async (url) => {
+      try {
+        const res = await fetch(url, {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      const applicantsRaw = await safeFetch(`${base}/api/hr/all_applicants`);
-      const interviewsRaw = await safeFetch(`${base}/api/hr/allInterviews`);
-
-      const applicants = Array.isArray(applicantsRaw)
-        ? applicantsRaw
-        : applicantsRaw?.data || [];
-
-      const interviews = Array.isArray(interviewsRaw)
-        ? interviewsRaw
-        : interviewsRaw?.data || [];
-
-      console.log("Applicants:", applicants);
-      console.log("Interviews:", interviews);
-
-      // ✅ BUILD DYNAMIC FILTER OPTIONS
-      if (Array.isArray(applicants)) {
-        const uniqueDepartments = [
-          ...new Set(applicants.map(a => a.department).filter(Boolean))
-        ];
-
-        const uniquePositions = [
-          ...new Set(
-            applicants.map(a => a.job_code || a.position).filter(Boolean)
-          )
-        ];
-
-        setDepartments(uniqueDepartments);
-        setPositions(uniquePositions);
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
       }
+    };
 
-      // ✅ APPLY FILTERS
-      let filteredApplicants = [...applicants];
+    // 🔥 FETCH ALL DATA SOURCES
+    const applicantsRaw = await safeFetch(`${base}/api/hr/all_applicants`);
+    const interviewsRaw = await safeFetch(`${base}/api/hr/allInterviews`);
+    const employeesRaw = await safeFetch(`${base}/api/hr/allEmployees`);
+    const offersRaw = await safeFetch(`${base}/api/hr/allOffers`);
 
-      if (filters.department) {
-        filteredApplicants = filteredApplicants.filter(
-          a =>
-            a.department?.toLowerCase() ===
-            filters.department.toLowerCase()
-        );
-      }
+    const applicants = Array.isArray(applicantsRaw)
+      ? applicantsRaw
+      : applicantsRaw?.data || [];
 
-      if (filters.position) {
-        filteredApplicants = filteredApplicants.filter(
-          a =>
-            a.job_code?.toLowerCase() ===
-              filters.position.toLowerCase() ||
-            a.position?.toLowerCase() ===
-              filters.position.toLowerCase()
-        );
-      }
+    const interviews = Array.isArray(interviewsRaw)
+      ? interviewsRaw
+      : interviewsRaw?.data || [];
 
-      const totalApplications = filteredApplicants.length;
+    const employees = employeesRaw?.employee_data || [];
+    const offers = Array.isArray(offersRaw)
+      ? offersRaw
+      : offersRaw?.data || [];
 
-      const totalInterviews = interviews.filter(interview =>
-        filteredApplicants.some(
-          app => app.id === interview.applicant_id
-        )
-      ).length;
-
-      const totalOffers = filteredApplicants.filter(
-        a => a.status?.toLowerCase() === "offered"
-      ).length;
-
-      const totalHires = filteredApplicants.filter(
-        a => a.status?.toLowerCase() === "hired"
-      ).length;
-
-      const applicationToInterview = totalApplications
-        ? Math.round((totalInterviews / totalApplications) * 100)
-        : 0;
-
-      const interviewToOffer = totalInterviews
-        ? Math.round((totalOffers / totalInterviews) * 100)
-        : 0;
-
-      const offerAcceptance = totalOffers
-        ? Math.round((totalHires / totalOffers) * 100)
-        : 0;
-
-      const kpiData = {
-        totalApplications,
-        applicationToInterview,
-        interviewToOffer,
-        offerAcceptance,
-        averageTimeToHire: 30
-      };
-
-      const funnelData = [
-        { stage: "Applications", count: totalApplications, percentage: 100 },
-        { stage: "Interviews", count: totalInterviews, percentage: applicationToInterview },
-        { stage: "Offers", count: totalOffers, percentage: interviewToOffer },
-        { stage: "Hires", count: totalHires, percentage: offerAcceptance }
+    // ✅ BUILD DYNAMIC FILTER OPTIONS FROM APPLICANTS
+    if (Array.isArray(applicants)) {
+      const uniqueDepartments = [
+        ...new Set(applicants.map(a => a.department).filter(Boolean))
       ];
 
-      const performanceMap = {};
+      const uniquePositions = [
+        ...new Set(
+          applicants.map(a => a.job_code || a.position).filter(Boolean)
+        )
+      ];
 
-      filteredApplicants.forEach(app => {
-        const position = app.job_code || app.position || "Unknown";
-
-        if (!performanceMap[position]) {
-          performanceMap[position] = {
-            position,
-            applicants: 0,
-            interviews: 0,
-            offers: 0,
-            hires: 0
-          };
-        }
-
-        performanceMap[position].applicants++;
-
-        if (app.status?.toLowerCase() === "interviewed")
-          performanceMap[position].interviews++;
-
-        if (app.status?.toLowerCase() === "offered")
-          performanceMap[position].offers++;
-
-        if (app.status?.toLowerCase() === "hired")
-          performanceMap[position].hires++;
-      });
-
-      const performanceData = Object.values(performanceMap).map(p => {
-        const conversionRate = p.applicants
-          ? ((p.hires / p.applicants) * 100).toFixed(1)
-          : 0;
-
-        let performance = "Average";
-        if (conversionRate > 15) performance = "Excellent";
-        else if (conversionRate > 10) performance = "Good";
-        else if (conversionRate < 5) performance = "Bad";
-
-        return {
-          ...p,
-          conversionRate,
-          avgTimeToHire: 30,
-          performance
-        };
-      });
-
-      setReportData({
-        kpi_data: kpiData,
-        funnel_data: funnelData,
-        performance_data: performanceData
-      });
-
-    } catch (err) {
-      console.error("Reports error:", err);
-      setError("Failed to load reports");
-    } finally {
-      setLoading(false);
+      setDepartments(uniqueDepartments);
+      setPositions(uniquePositions);
     }
-  };
+
+    // ✅ APPLY FILTERS TO APPLICANTS
+    let filteredApplicants = [...applicants];
+
+    if (filters.department) {
+      filteredApplicants = filteredApplicants.filter(
+        a =>
+          a.department?.toLowerCase() ===
+          filters.department.toLowerCase()
+      );
+    }
+
+    if (filters.position) {
+      filteredApplicants = filteredApplicants.filter(
+        a =>
+          a.job_code?.toLowerCase() === filters.position.toLowerCase() ||
+          a.position?.toLowerCase() === filters.position.toLowerCase()
+      );
+    }
+
+    const totalApplications = filteredApplicants.length;
+
+    const totalInterviews = interviews.filter(interview =>
+      filteredApplicants.some(
+        app => app.id === interview.applicant_id
+      )
+    ).length;
+
+    // 🔥 NOW USING REAL OFFERS ENDPOINT
+    const totalOffers = offers.length;
+
+    // 🔥 NOW USING REAL EMPLOYEES ENDPOINT
+    const totalHires = employees.length;
+
+    // ✅ CONVERSION RATES
+    const applicationToInterview = totalApplications
+      ? Math.round((totalInterviews / totalApplications) * 100)
+      : 0;
+
+    const interviewToOffer = totalInterviews
+      ? Math.round((totalOffers / totalInterviews) * 100)
+      : 0;
+
+    const offerAcceptance = totalOffers
+      ? Math.round((totalHires / totalOffers) * 100)
+      : 0;
+
+    const kpiData = {
+      totalApplications,
+      applicationToInterview,
+      interviewToOffer,
+      offerAcceptance,
+      averageTimeToHire: 30
+    };
+
+    const funnelData = [
+      { stage: "Applications", count: totalApplications, percentage: 100 },
+      { stage: "Interviews", count: totalInterviews, percentage: applicationToInterview },
+      { stage: "Offers", count: totalOffers, percentage: interviewToOffer },
+      { stage: "Hires", count: totalHires, percentage: offerAcceptance }
+    ];
+
+    // 🔥 PERFORMANCE BY POSITION (Now Includes Real Hires)
+    const performanceMap = {};
+
+    filteredApplicants.forEach(app => {
+      const position = app.job_code || app.position || "Unknown";
+
+      if (!performanceMap[position]) {
+        performanceMap[position] = {
+          position,
+          applicants: 0,
+          interviews: 0,
+          offers: 0,
+          hires: 0
+        };
+      }
+
+      performanceMap[position].applicants++;
+
+      if (app.status?.toLowerCase() === "interviewed")
+        performanceMap[position].interviews++;
+    });
+
+    // Count offers by position (if offer contains job/position info)
+    offers.forEach(offer => {
+      const position = offer.job_code || offer.position || "Unknown";
+      if (performanceMap[position]) {
+        performanceMap[position].offers++;
+      }
+    });
+
+    // Count hires by position (from employees)
+    employees.forEach(emp => {
+      const position = emp.job_title || "Unknown";
+      if (performanceMap[position]) {
+        performanceMap[position].hires++;
+      }
+    });
+
+    const performanceData = Object.values(performanceMap).map(p => {
+      const conversionRate = p.applicants
+        ? ((p.hires / p.applicants) * 100).toFixed(1)
+        : 0;
+
+      let performance = "Average";
+      if (conversionRate > 15) performance = "Excellent";
+      else if (conversionRate > 10) performance = "Good";
+      else if (conversionRate < 5) performance = "Bad";
+
+      return {
+        ...p,
+        conversionRate,
+        avgTimeToHire: 30,
+        performance
+      };
+    });
+
+    setReportData({
+      kpi_data: kpiData,
+      funnel_data: funnelData,
+      performance_data: performanceData
+    });
+
+  } catch (err) {
+    console.error("Reports error:", err);
+    setError("Failed to load reports");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchReportData();
