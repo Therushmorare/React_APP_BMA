@@ -3,7 +3,13 @@
 import React, { useEffect, useState } from "react";
 
 const PipelineModal = ({ selectedJob }) => {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    applicants: 0,
+    review: 0,
+    interviews: 0,
+    offers: 0,
+  });
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -15,30 +21,26 @@ const PipelineModal = ({ selectedJob }) => {
       const base = "https://jellyfish-app-z83s2.ondigitalocean.app";
       const token = sessionStorage.getItem("access_token");
 
-      const safeFetch = async (url) => {
-        try {
-          const res = await fetch(url, {
-            headers: {
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!res.ok) return [];
-          return await res.json();
-        } catch {
-          return [];
-        }
-      };
-
       try {
-        const applicantsRaw = await safeFetch(`${base}/api/hr/all_applicants`);
+        const safeFetch = async (url) => {
+          try {
+            const res = await fetch(url, {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            if (!res.ok) return null;
+            return await res.json();
+          } catch {
+            return null;
+          }
+        };
+
+        // 🔥 Fetch all data
         const interviewsRaw = await safeFetch(`${base}/api/hr/allInterviews`);
         const offersRaw = await safeFetch(`${base}/api/hr/allOffers`);
-
-        const applicants = Array.isArray(applicantsRaw)
-          ? applicantsRaw
-          : applicantsRaw?.data || [];
 
         const interviews = Array.isArray(interviewsRaw)
           ? interviewsRaw
@@ -48,44 +50,33 @@ const PipelineModal = ({ selectedJob }) => {
           ? offersRaw
           : offersRaw?.data || [];
 
-        // 🔥 Filter by job_id
-        const jobApplicants = applicants.filter(
-          (a) => a.job_id === selectedJob.job_id
-        );
+        // 🔥 Applicants from selected job (if already passed in)
+        const totalApplicants = selectedJob?.applicants || 0;
 
-        const jobInterviews = interviews.filter(
+        // 🔥 In Review = job.status === REVIEW
+        const inReview =
+          selectedJob?.status?.toUpperCase() === "REVIEW"
+            ? totalApplicants
+            : 0;
+
+        // 🔥 Interviews filtered by job_id
+        const totalInterviews = interviews.filter(
           (i) => i.job_id === selectedJob.job_id
-        );
-
-        const jobOffers = offers.filter(
-          (o) => o.job_id === selectedJob.job_id
-        );
-
-        const totalApplicants = jobApplicants.length;
-        const inReview = jobApplicants.filter(
-          (a) => a.status?.toUpperCase() === "REVIEW"
         ).length;
-        const totalInterviews = jobInterviews.length;
-        const totalOffers = jobOffers.length;
 
-        const interviewRate = totalApplicants
-          ? Math.round((totalInterviews / totalApplicants) * 100)
-          : 0;
-
-        const offerRate = totalInterviews
-          ? Math.round((totalOffers / totalInterviews) * 100)
-          : 0;
+        // 🔥 Offers filtered by job_id
+        const totalOffers = offers.filter(
+          (o) => o.job_id === selectedJob.job_id
+        ).length;
 
         setStats({
-          totalApplicants,
-          inReview,
-          totalInterviews,
-          totalOffers,
-          interviewRate,
-          offerRate,
+          applicants: totalApplicants,
+          review: inReview,
+          interviews: totalInterviews,
+          offers: totalOffers,
         });
       } catch (err) {
-        console.error("Pipeline error:", err);
+        console.error("Pipeline fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -94,80 +85,51 @@ const PipelineModal = ({ selectedJob }) => {
     fetchPipelineData();
   }, [selectedJob]);
 
-  if (loading || !stats) {
-    return (
-      <div className="text-center py-6 text-gray-500">
-        Loading pipeline analytics...
-      </div>
-    );
-  }
-
-  const stages = [
-    {
-      label: "Applications",
-      value: stats.totalApplicants,
-      color: "bg-blue-500",
-      percentage: 100,
-    },
-    {
-      label: "In Review",
-      value: stats.inReview,
-      color: "bg-yellow-500",
-      percentage: stats.totalApplicants
-        ? Math.round((stats.inReview / stats.totalApplicants) * 100)
-        : 0,
-    },
-    {
-      label: "Interviews",
-      value: stats.totalInterviews,
-      color: "bg-green-500",
-      percentage: stats.interviewRate,
-    },
-    {
-      label: "Offers",
-      value: stats.totalOffers,
-      color: "bg-purple-500",
-      percentage: stats.offerRate,
-    },
-  ];
-
   return (
-    <div className="space-y-6">
-      {stages.map((stage, index) => (
-        <div key={index}>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="font-medium text-gray-700">
-              {stage.label}
-            </span>
-            <span className="text-gray-500">
-              {stage.value} ({stage.percentage}%)
-            </span>
+    <div className="space-y-4">
+      {loading ? (
+        <div className="text-center py-6 text-gray-500">
+          Loading pipeline...
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.applicants}
+            </div>
+            <div className="text-sm text-gray-600">
+              Total Applicants
+            </div>
           </div>
 
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className={`${stage.color} h-3 rounded-full transition-all duration-500`}
-              style={{ width: `${stage.percentage}%` }}
-            />
+          <div className="text-center p-4 bg-yellow-50 rounded-lg">
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.review}
+            </div>
+            <div className="text-sm text-gray-600">
+              In Review
+            </div>
+          </div>
+
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">
+              {stats.interviews}
+            </div>
+            <div className="text-sm text-gray-600">
+              Interviews
+            </div>
+          </div>
+
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">
+              {stats.offers}
+            </div>
+            <div className="text-sm text-gray-600">
+              Offers
+            </div>
           </div>
         </div>
-      ))}
-
-      {/* Conversion Summary */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-xl border text-sm">
-        <div className="flex justify-between">
-          <span>Application → Interview</span>
-          <span className="font-semibold">
-            {stats.interviewRate}%
-          </span>
-        </div>
-        <div className="flex justify-between mt-2">
-          <span>Interview → Offer</span>
-          <span className="font-semibold">
-            {stats.offerRate}%
-          </span>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
