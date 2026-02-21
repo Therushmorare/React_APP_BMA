@@ -19,8 +19,9 @@ const Navbar = () => {
   const [userAvatar, setUserAvatar] = useState("");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [appliedCount, setAppliedCount] = useState(0);
 
-  // ✅ Get user_id safely from sessionStorage (browser-only)
+  // Get user_id safely from sessionStorage (browser-only)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedId = sessionStorage.getItem("user_id");
@@ -30,7 +31,7 @@ const Navbar = () => {
     }
   }, []);
 
-  // ✅ Fetch HR member data once userId is available
+  // Fetch HR member data once userId is available
   useEffect(() => {
     if (!userId) return;
 
@@ -58,6 +59,26 @@ const Navbar = () => {
 
     fetchHRMembers();
   }, [userId]);
+
+  // Fetch all applicants and count applied
+  useEffect(() => {
+    const fetchApplicants = async () => {
+      try {
+        const response = await axios.get(
+          "https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/all_applicants",
+          { headers: { Accept: "application/json" } }
+        );
+
+        const applicants = response.data;
+        const count = applicants.filter(app => app.application_status === "APPLIED").length;
+        setAppliedCount(count);
+      } catch (error) {
+        console.error("Error fetching applicants:", error);
+      }
+    };
+
+    fetchApplicants();
+  }, []);
 
   const getInitials = (name) => {
     if (!name) return "";
@@ -158,9 +179,11 @@ const Navbar = () => {
               className="relative p-2.5 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-green-700 transition-all duration-200"
             >
               <Bell size={20} />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
-                2
-              </span>
+              {appliedCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+                  {appliedCount}
+                </span>
+              )}
             </button>
           </div>
 
