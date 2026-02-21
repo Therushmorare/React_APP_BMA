@@ -139,6 +139,14 @@ const JobPosts = () => {
     ));
   };
 
+  const handleJobDeleted = (deletedId) => {
+  setJobs((prev) =>
+    prev.filter((job) => job.job_id !== deletedId)
+  );
+
+  setShowModal(false);
+  };
+  
   const getStatusColor = (status) => {
     switch (status) {
       case 'Active':
