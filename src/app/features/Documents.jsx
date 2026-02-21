@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Search, Filter, Eye, Download, Trash2 } from "lucide-react";
+import { X, Search, Filter, Eye, Download, Trash2, FileText, Folder, Archive, } from "lucide-react";
 import axios from "axios";
 
 const DocumentsModal = ({ onClose }) => {
@@ -189,28 +189,52 @@ const DocumentsModal = ({ onClose }) => {
             <>
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-green-700">
-                  <p className="text-gray-600 text-sm">Total Documents</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {stats.total_documents}
-                  </p>
+                {/* Total Documents */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-green-700 shadow-sm hover:shadow-md transition">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-600 text-sm">Total Documents</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {stats.total_documents}
+                      </p>
+                    </div>
+                    <div className="bg-green-100 p-2 rounded-lg">
+                      <FileText className="w-6 h-6 text-green-700" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-blue-500">
-                  <p className="text-gray-600 text-sm">Categories</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {stats.total_categories}
-                  </p>
+                {/* Categories */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-600 text-sm">Categories</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {stats.total_categories}
+                      </p>
+                    </div>
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <Folder className="w-6 h-6 text-blue-500" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-purple-500">
-                  <p className="text-gray-600 text-sm">Total Size</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {stats.total_size}
-                  </p>
+                {/* Total Size */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-gray-600 text-sm">Total Size</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {stats.total_size}
+                      </p>
+                    </div>
+                    <div className="bg-purple-100 p-2 rounded-lg">
+                      <Archive className="w-6 h-6 text-purple-500" />
+                    </div>
+                  </div>
                 </div>
               </div>
-
+              
               {/* Table */}
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <table className="w-full">
