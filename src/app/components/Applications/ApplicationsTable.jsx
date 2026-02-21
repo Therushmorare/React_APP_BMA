@@ -61,14 +61,14 @@ const ApplicationRow = React.memo(({
         >
           <Eye size={16} />
         </button>
-        <button
+        {/*<button
           onClick={() => onAction(application.id, 'delete')}
           disabled={isLoading}
           className="p-1.5 text-gray-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
           title="Delete application"
         >
           {isLoading ? <Loader className="animate-spin" size={16} /> : <Trash2 size={16} />}
-        </button>
+        </button>*/}
       </div>
     </td>
   </tr>

@@ -146,9 +146,44 @@ const EmployeeManagement = ({ isOpen, onClose, formData }) => {
     });
   };
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this employee account?')) {
-      handleClose();
+  const handleDelete = async () => {
+    const employeeId = sessionStorage.getItem("user_id"); // logged-in HR
+    const candidateId = employeeData.id;
+
+    if (!employeeId || !candidateId) {
+      alert("Missing required IDs.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this employee account?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const response = await axios.post(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/deleteCandidate/${employeeId}/${candidateId}`,
+        {
+          employee_id: employeeId,
+          candidate_id: candidateId,
+        },
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+          },
+        }
+      );
+
+      console.log("Delete success:", response.data);
+
+      alert("Candidate deleted successfully.");
+
+      handleClose(); // close modal after success
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Failed to delete candidate.");
     }
   };
 
