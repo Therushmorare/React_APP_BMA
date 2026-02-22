@@ -222,7 +222,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
 
       const jobPostPayload = {
         employee_id: employeeId,
-        job_id:"",
+        job_id: "",
         job_title: formData.title || "",
         candidate_type: formData.expectedCandidateType,
         employment_type: formData.type || "",
@@ -235,10 +235,10 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
         closing_date: formData.applicationDeadline || "",
         description: formData.description || "",
         requirements_list: (formData.requiredSkills || []).map(String),
-        duties_list: (formData.responsibilities || []).map(String),
+        duties_list, // <-- use the splitToList variable
         documents_required_list: (formData.documentsRequired || []).map(String),
       };
-
+      
       const jobPostRes = await postJSON(
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
         token,
