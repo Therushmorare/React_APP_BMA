@@ -220,25 +220,33 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       // jobPost payload
       const duties_list = splitToList(formData.responsibilities || "");
 
+      if (!formData.title?.trim()) {
+        console.error("Job title missing:", formData.title);
+        alert("Job title is required");
+        return;
+      }
+
       const jobPostPayload = {
         employee_id: employeeId,
         job_id: "",
-        job_title: formData.title || "",
-        candidate_type: formData.expectedCandidateType,
+        job_title: formData.title.trim(),
+        candidate_type: formData.expectedCandidateType || "",
         employment_type: formData.type || "",
         department: formData.department || "",
         office:
           formData.locationType === "onsite"
             ? [formData.city, "Onsite"].filter(Boolean).join(", ")
-            : formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1),
-        required_applicants_num: formData.numApplicants || 1,
+            : formData.locationType
+              ? formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
+              : "",
+        required_applicants_num: Number(formData.numApplicants) || 1,
         closing_date: formData.applicationDeadline || "",
         description: formData.description || "",
         requirements_list: (formData.requiredSkills || []).map(String),
-        duties_list, // <-- use the splitToList variable
+        duties_list,
         documents_required_list: (formData.documentsRequired || []).map(String),
       };
-      
+
       const jobPostRes = await postJSON(
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
         token,
