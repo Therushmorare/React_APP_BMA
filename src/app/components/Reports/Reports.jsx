@@ -48,10 +48,13 @@ const ReportsPage = () => {
       };
 
       // FETCH ALL DATA SOURCES
-      const applicantsRaw = await safeFetch(`${base}/api/hr/all_applicants`);
-      const interviewsRaw = await safeFetch(`${base}/api/hr/allInterviews`);
-      const employeesRaw = await safeFetch(`${base}/api/hr/allEmployees`);
-      const offersRaw = await safeFetch(`${base}/api/hr/allOffers`);
+      const [applicantsRaw, interviewsRaw, employeesRaw, offersRaw, jobsRaw] = await Promise.all([
+        safeFetch(`${base}/api/hr/all_applicants`),
+        safeFetch(`${base}/api/hr/allInterviews`),
+        safeFetch(`${base}/api/hr/allEmployees`),
+        safeFetch(`${base}/api/hr/allOffers`),
+        safeFetch(`${base}/api/candidate/allPosts`) // <-- Fetch job posts
+      ]);
 
       const applicants = Array.isArray(applicantsRaw)
         ? applicantsRaw
@@ -66,6 +69,16 @@ const ReportsPage = () => {
         ? offersRaw
         : offersRaw?.data || [];
 
+      const jobs = jobsRaw?.jobs || [];
+
+      // BUILD JOB MAPPING (job_id => expected_candidates or job_title)
+      const jobMap = {};
+      jobs.forEach(job => {
+        if (job.job_id) {
+          jobMap[job.job_id] = job.expected_candidates || job.job_title || "Unknown";
+        }
+      });
+
       // BUILD DYNAMIC FILTER OPTIONS FROM APPLICANTS
       if (Array.isArray(applicants)) {
         const uniqueDepartments = [
@@ -74,7 +87,10 @@ const ReportsPage = () => {
 
         const uniquePositions = [
           ...new Set(
-            applicants.map(a => a.job_code || a.position).filter(Boolean)
+            applicants.map(a => {
+              // Use jobMap to get real position if missing
+              return a.job_code || a.position || jobMap[a.job_id] || null;
+            }).filter(Boolean)
           )
         ];
 
@@ -93,30 +109,30 @@ const ReportsPage = () => {
 
       if (filters.position) {
         filteredApplicants = filteredApplicants.filter(
-          a =>
-            a.job_code?.toLowerCase() === filters.position.toLowerCase() ||
-            a.position?.toLowerCase() === filters.position.toLowerCase()
+          a => {
+            const pos = a.job_code || a.position || jobMap[a.job_id] || "";
+            return pos.toLowerCase() === filters.position.toLowerCase();
+          }
         );
       }
 
       const totalApplications = filteredApplicants.length;
 
-      // 🔥 CREATE SET FOR FAST MATCHING (FIXED: use applicant_id)
       const applicantIds = new Set(filteredApplicants.map(a => a.applicant_id));
 
-      // ✅ FILTER INTERVIEWS PROPERLY
+      // FILTER INTERVIEWS
       const filteredInterviews = interviews.filter(interview =>
         applicantIds.has(interview.candidate_id)
       );
       const totalInterviews = filteredInterviews.length;
 
-      // ✅ FILTER OFFERS PROPERLY
+      // FILTER OFFERS
       const filteredOffers = offers.filter(offer =>
         applicantIds.has(offer.candidate_id)
       );
       const totalOffers = filteredOffers.length;
 
-      // ✅ FILTER HIRES PROPERLY
+      // FILTER HIRES
       const filteredHires = employees.filter(emp =>
         applicantIds.has(emp.candidate_id)
       );
@@ -154,7 +170,7 @@ const ReportsPage = () => {
       const performanceMap = {};
 
       filteredApplicants.forEach(app => {
-        const position = app.job_code || app.position || "Unknown";
+        const position = a.job_code || a.position || jobMap[a.job_id] || "Unknown";
 
         if (!performanceMap[position]) {
           performanceMap[position] = {
@@ -169,42 +185,42 @@ const ReportsPage = () => {
         performanceMap[position].applicants++;
       });
 
-      // ✅ COUNT INTERVIEWS BY POSITION (FIXED)
+      // COUNT INTERVIEWS
       filteredInterviews.forEach(interview => {
         const applicant = filteredApplicants.find(
           app => app.applicant_id === interview.candidate_id
         );
 
         if (applicant) {
-          const position = applicant.job_code || applicant.position || "Unknown";
+          const position = applicant.job_code || applicant.position || jobMap[applicant.job_id] || "Unknown";
           if (performanceMap[position]) {
             performanceMap[position].interviews++;
           }
         }
       });
 
-      // COUNT OFFERS BY POSITION (FIXED)
+      // COUNT OFFERS
       filteredOffers.forEach(offer => {
         const applicant = filteredApplicants.find(
           app => app.applicant_id === offer.candidate_id
         );
 
         if (applicant) {
-          const position = applicant.job_code || applicant.position || "Unknown";
+          const position = applicant.job_code || applicant.position || jobMap[applicant.job_id] || "Unknown";
           if (performanceMap[position]) {
             performanceMap[position].offers++;
           }
         }
       });
 
-      // COUNT HIRES BY POSITION (FIXED)
+      // COUNT HIRES
       filteredHires.forEach(emp => {
         const applicant = filteredApplicants.find(
           app => app.applicant_id === emp.candidate_id
         );
 
         if (applicant) {
-          const position = applicant.job_code || applicant.position || "Unknown";
+          const position = applicant.job_code || applicant.position || jobMap[applicant.job_id] || "Unknown";
           if (performanceMap[position]) {
             performanceMap[position].hires++;
           }
