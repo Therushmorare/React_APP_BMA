@@ -105,10 +105,10 @@ const fetchReportData = async () => {
 
     const totalInterviews = interviews.filter(interview =>
       filteredApplicants.some(
-        app => app.id === interview.applicant_id
+        app => app.id === interview.candidate_id
       )
     ).length;
-
+    
     // NOW USING REAL OFFERS ENDPOINT
     const totalOffers = offers.length;
 
