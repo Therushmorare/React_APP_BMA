@@ -82,7 +82,7 @@ const fetchReportData = async () => {
       setPositions(uniquePositions);
     }
 
-    // ✅ APPLY FILTERS TO APPLICANTS
+    // APPLY FILTERS TO APPLICANTS
     let filteredApplicants = [...applicants];
 
     if (filters.department) {
@@ -109,13 +109,13 @@ const fetchReportData = async () => {
       )
     ).length;
 
-    // 🔥 NOW USING REAL OFFERS ENDPOINT
+    // NOW USING REAL OFFERS ENDPOINT
     const totalOffers = offers.length;
 
-    // 🔥 NOW USING REAL EMPLOYEES ENDPOINT
+    // NOW USING REAL EMPLOYEES ENDPOINT
     const totalHires = employees.length;
 
-    // ✅ CONVERSION RATES
+    // CONVERSION RATES
     const applicationToInterview = totalApplications
       ? Math.round((totalInterviews / totalApplications) * 100)
       : 0;
@@ -143,7 +143,7 @@ const fetchReportData = async () => {
       { stage: "Hires", count: totalHires, percentage: offerAcceptance }
     ];
 
-    // 🔥 PERFORMANCE BY POSITION (Now Includes Real Hires)
+    // PERFORMANCE BY POSITION (Now Includes Real Hires)
     const performanceMap = {};
 
     filteredApplicants.forEach(app => {

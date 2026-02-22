@@ -40,6 +40,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
   const [documents, setDocuments] = useState([]);
   const [eduOpen, setEduOpen] = useState(true);
   const [expOpen, setExpOpen] = useState(true);
+  const [alertMessage, setAlertMessage] = useState(null);
 
   const emailTemplates = [
     { value: "reject", label: "Reject Application" },
@@ -201,21 +202,21 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
   const handleScreenApplicant = async () => {
     if (!application?.id) {
-      console.warn("No application selected.");
+      setAlertMessage({ type: "error", message: "No application selected." });
       return;
     }
 
-    const employeeId = sessionStorage.getItem('user_id');
+    const employeeId = sessionStorage.getItem("user_id");
     const candidateId = application.id;
-    const token = sessionStorage.getItem('access_token'); //get JWT token
+    const token = sessionStorage.getItem("access_token");
 
     if (!employeeId) {
-      console.error("Employee ID not found in sessionStorage.");
+      setAlertMessage({ type: "error", message: "Employee session expired. Please log in again." });
       return;
     }
 
     if (!token) {
-      console.error("JWT token not found in sessionStorage. User might need to log in again.");
+      setAlertMessage({ type: "error", message: "Authentication token missing. Please log in again." });
       return;
     }
 
@@ -228,43 +229,69 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`, //include JWT token
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             employee_id: employeeId,
             candidate_id: candidateId,
-            status: "SCREENING", // can make dynamic if needed
+            status: "SCREENING",
           }),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to update application status: ${errorText}`);
+        throw new Error(errorText || "Failed to update application status");
       }
 
       const data = await response.json();
       console.log("Application updated successfully:", data);
 
+      // SUCCESS
+      setAlertMessage({
+        type: "success",
+        message: "Applicant successfully moved to screening."
+      });
+
+      // Close modal
+      setShowScreeningConfirm(false);
+
     } catch (error) {
       console.error("Error updating application:", error);
-      alert("Failed to update application. Please check console for details.");
+
+      setAlertMessage({
+        type: "error",
+        message: "Failed to update application. Please try again."
+      });
+
     } finally {
       setLoading(false);
+
+      // Auto hide alert after 3 seconds
+      setTimeout(() => {
+        setAlertMessage(null);
+      }, 3000);
     }
   };
 
   const handleRejectApplication = async () => {
     if (!application?.id) {
-      console.warn("No application selected.");
+      setAlertMessage({
+        type: "error",
+        message: "No application selected."
+      });
       return;
     }
 
-    const employeeId = sessionStorage.getItem('user_id');
+    const employeeId = sessionStorage.getItem("user_id");
     const candidateId = application.id;
+    const token = sessionStorage.getItem("access_token");
 
-    if (!employeeId) {
-      console.error("Employee ID not found in sessionStorage.");
+    if (!employeeId || !token) {
+      setAlertMessage({
+        type: "error",
+        message: "Session expired. Please log in again."
+      });
       return;
     }
 
@@ -277,26 +304,41 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`, //include JWT token
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             employee_id: employeeId,
             candidate_id: candidateId,
-            status: "REJECTED", // change this dynamically if needed
+            status: "REJECTED",
           }),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to update application status: ${errorText}`);
+        throw new Error(errorText);
       }
 
-      const data = await response.json();
-      console.log("Application updated successfully:", data);
+      await response.json();
+
+      // Success Alert
+      setAlertMessage({
+        type: "success",
+        message: "Application rejected successfully."
+      });
+
+      // Close modal
+      setShowRejectConfirm(false);
+
+      // fetchApplicants();
 
     } catch (error) {
       console.error("Error updating application:", error);
+
+      setAlertMessage({
+        type: "error",
+        message: "Failed to reject application."
+      });
     } finally {
       setLoading(false);
     }
@@ -349,6 +391,20 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               <X size={20} />
             </button>
           </div>
+
+          {alertMessage && (
+          <div className="fixed top-5 right-5 z-[9999]">
+            <div
+              className={`px-4 py-3 rounded-lg shadow-lg text-white ${
+                alertMessage.type === "success"
+                  ? "bg-green-600"
+                  : "bg-red-600"
+              }`}
+            >
+              {alertMessage.message}
+            </div>
+          </div>
+        )}
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -648,7 +704,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 space-y-4 w-80 text-center">
             <p className="text-gray-800 font-medium">
               Are you sure you want to delete this application?
@@ -673,23 +729,26 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
       {/* Rejection Confirmation Modal */}
       {showRejectConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 space-y-4 w-80 text-center">
             <p className="text-gray-800 font-medium">
               Are you sure you want to reject this application?
             </p>
+
             <div className="flex justify-between space-x-3">
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => setShowRejectConfirm(false)}
                 className="flex-1 bg-gray-200 py-2 rounded-lg"
               >
                 Cancel
               </button>
+
               <button
                 onClick={handleRejectApplication}
+                disabled={loading}
                 className="flex-1 bg-red-600 text-white py-2 rounded-lg"
               >
-                Confirm
+                {loading ? "Processing..." : "Confirm"}
               </button>
             </div>
           </div>
@@ -698,7 +757,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
       {/* Screening Confirmation */}
       {showScreeningConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-50 z-50 p-4">
           <div className="bg-white rounded-lg p-6 space-y-6 w-full max-w-sm text-center shadow-lg animate-fade-in">
             <h2 className="text-lg font-semibold text-gray-800">
               Confirm Screening
@@ -715,9 +774,10 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               </button>
               <button
                 onClick={handleScreenApplicant}
-                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                disabled={loading}
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
               >
-                Confirm
+                {loading ? "Processing..." : "Confirm"}
               </button>
             </div>
           </div>
@@ -726,7 +786,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
 
       {/* Interview Schedule Modal */}
       {showInterviewSchedule && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 space-y-4 w-80 text-center">
             <p className="text-gray-800 font-medium">Schedule Interview</p>
             <input
@@ -759,7 +819,7 @@ const ApplicationModal = ({ application, onClose, onAction }) => {
               </button>
               <button
                 onClick={handleScheduleInterview}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg"
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
               >
                 Schedule
               </button>
