@@ -170,7 +170,7 @@ const ReportsPage = () => {
       const performanceMap = {};
 
       filteredApplicants.forEach(app => {
-        const position = a.job_code || a.position || jobMap[a.job_id] || "Unknown";
+        const position = app.job_code || app.position || jobMap[app.job_id] || "Unknown";
 
         if (!performanceMap[position]) {
           performanceMap[position] = {
@@ -182,7 +182,7 @@ const ReportsPage = () => {
           };
         }
 
-        performanceMap[position].applicants++;
+        performanceMap[position]++;
       });
 
       // COUNT INTERVIEWS
