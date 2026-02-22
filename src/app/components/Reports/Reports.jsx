@@ -182,7 +182,8 @@ const ReportsPage = () => {
           };
         }
 
-        performanceMap[position]++;
+        // Increment applicants count, not the object
+        performanceMap[position].applicants++;
       });
 
       // COUNT INTERVIEWS
