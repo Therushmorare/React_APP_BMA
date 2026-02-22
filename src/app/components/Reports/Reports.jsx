@@ -47,7 +47,7 @@ const fetchReportData = async () => {
       }
     };
 
-    // 🔥 FETCH ALL DATA SOURCES
+    // FETCH ALL DATA SOURCES
     const applicantsRaw = await safeFetch(`${base}/api/hr/all_applicants`);
     const interviewsRaw = await safeFetch(`${base}/api/hr/allInterviews`);
     const employeesRaw = await safeFetch(`${base}/api/hr/allEmployees`);
@@ -66,7 +66,7 @@ const fetchReportData = async () => {
       ? offersRaw
       : offersRaw?.data || [];
 
-    // ✅ BUILD DYNAMIC FILTER OPTIONS FROM APPLICANTS
+    // BUILD DYNAMIC FILTER OPTIONS FROM APPLICANTS
     if (Array.isArray(applicants)) {
       const uniqueDepartments = [
         ...new Set(applicants.map(a => a.department).filter(Boolean))
