@@ -87,9 +87,7 @@ const fetchReportData = async () => {
 
     if (filters.department) {
       filteredApplicants = filteredApplicants.filter(
-        a =>
-          a.department?.toLowerCase() ===
-          filters.department.toLowerCase()
+        a => a.department?.toLowerCase() === filters.department.toLowerCase()
       );
     }
 
@@ -103,17 +101,26 @@ const fetchReportData = async () => {
 
     const totalApplications = filteredApplicants.length;
 
-    const totalInterviews = interviews.filter(interview =>
-      filteredApplicants.some(
-        app => app.id === interview.candidate_id
-      )
-    ).length;
-    
-    // NOW USING REAL OFFERS ENDPOINT
-    const totalOffers = offers.length;
+    // 🔥 CREATE SET FOR FAST MATCHING
+    const applicantIds = new Set(filteredApplicants.map(a => a.id));
 
-    // NOW USING REAL EMPLOYEES ENDPOINT
-    const totalHires = employees.length;
+    // ✅ FILTER INTERVIEWS PROPERLY
+    const filteredInterviews = interviews.filter(interview =>
+      applicantIds.has(interview.candidate_id)
+    );
+    const totalInterviews = filteredInterviews.length;
+
+    // ✅ FILTER OFFERS PROPERLY (ASSUMES candidate_id EXISTS)
+    const filteredOffers = offers.filter(offer =>
+      applicantIds.has(offer.candidate_id)
+    );
+    const totalOffers = filteredOffers.length;
+
+    // ✅ FILTER HIRES PROPERLY (ASSUMES candidate_id EXISTS)
+    const filteredHires = employees.filter(emp =>
+      applicantIds.has(emp.candidate_id)
+    );
+    const totalHires = filteredHires.length;
 
     // CONVERSION RATES
     const applicationToInterview = totalApplications
@@ -143,7 +150,7 @@ const fetchReportData = async () => {
       { stage: "Hires", count: totalHires, percentage: offerAcceptance }
     ];
 
-    // PERFORMANCE BY POSITION (Now Includes Real Hires)
+    // PERFORMANCE BY POSITION
     const performanceMap = {};
 
     filteredApplicants.forEach(app => {
@@ -160,24 +167,47 @@ const fetchReportData = async () => {
       }
 
       performanceMap[position].applicants++;
-
-      if (app.status?.toLowerCase() === "interviewed")
-        performanceMap[position].interviews++;
     });
 
-    // Count offers by position (if offer contains job/position info)
-    offers.forEach(offer => {
-      const position = offer.job_code || offer.position || "Unknown";
-      if (performanceMap[position]) {
-        performanceMap[position].offers++;
+    // ✅ COUNT INTERVIEWS BY POSITION (REAL DATA)
+    filteredInterviews.forEach(interview => {
+      const applicant = filteredApplicants.find(
+        app => app.id === interview.candidate_id
+      );
+
+      if (applicant) {
+        const position = applicant.job_code || applicant.position || "Unknown";
+        if (performanceMap[position]) {
+          performanceMap[position].interviews++;
+        }
       }
     });
 
-    // Count hires by position (from employees)
-    employees.forEach(emp => {
-      const position = emp.job_title || "Unknown";
-      if (performanceMap[position]) {
-        performanceMap[position].hires++;
+    // COUNT OFFERS BY POSITION
+    filteredOffers.forEach(offer => {
+      const applicant = filteredApplicants.find(
+        app => app.id === offer.candidate_id
+      );
+
+      if (applicant) {
+        const position = applicant.job_code || applicant.position || "Unknown";
+        if (performanceMap[position]) {
+          performanceMap[position].offers++;
+        }
+      }
+    });
+
+    // COUNT HIRES BY POSITION
+    filteredHires.forEach(emp => {
+      const applicant = filteredApplicants.find(
+        app => app.id === emp.candidate_id
+      );
+
+      if (applicant) {
+        const position = applicant.job_code || applicant.position || "Unknown";
+        if (performanceMap[position]) {
+          performanceMap[position].hires++;
+        }
       }
     });
 
@@ -237,7 +267,6 @@ const fetchReportData = async () => {
         const jsonStr = JSON.stringify(reportData, null, 2);
         blob = new Blob([jsonStr], { type: "application/json" });
       } else if (format === 'pdf') {
-        // Placeholder for PDF export logic
         const jsonStr = JSON.stringify(reportData, null, 2);
         blob = new Blob([jsonStr], { type: "application/pdf" });
       } else {
@@ -263,18 +292,18 @@ const fetchReportData = async () => {
   };
 
   const getPerformanceColor = (performance) => {
-  switch (performance?.toLowerCase()) {
-    case 'excellent':
-      return 'bg-green-100 text-green-800';
-    case 'good':
-      return 'bg-blue-100 text-blue-800';
-    case 'average':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'bad':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+    switch (performance?.toLowerCase()) {
+      case 'excellent':
+        return 'bg-green-100 text-green-800';
+      case 'good':
+        return 'bg-blue-100 text-blue-800';
+      case 'average':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'bad':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   if (loading) {
