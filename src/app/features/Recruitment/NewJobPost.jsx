@@ -239,151 +239,108 @@ const putJSON = async (url, token, body) => {
   return data;
 };
 
-// =============================
-// HANDLE SUBMIT (CREATE + EDIT)
-// =============================
-const handleSubmit = async () => {
+const handleSubmit = async (publishNow = false) => {
   setIsSubmitting(true);
 
   try {
     const { token, employeeId } = getAuth();
-    if (!token || !employeeId) throw new Error("Authentication missing");
-
     const eid = employeeId;
-    const isEdit = !!existingJob?.id;
-    let jobId;
 
-    // ----------------------
-    // Build duties list
-    // ----------------------
+    // --------------------------
+    // Build expected_candidate string
+    // --------------------------
+    const expectedTitle = formData.seniorityLevel
+      ? `${formData.seniorityLevel} ${formData.title?.trim()}`
+      : formData.title?.trim() || "Candidate";
+
+    const expected_candidate =
+      (formData.expectedCandidateType === "internal" ? "Internal" : "External") +
+      " " +
+      expectedTitle;
+
+    // --------------------------
+    // Job Post payload
+    // --------------------------
     const duties_list = splitToList(formData.responsibilities || "");
 
-    // ----------------------
-    // JOB POST PAYLOAD
-    // ----------------------
     const jobPostPayload = {
       employee_id: employeeId,
-      job_title: formData.title?.trim() || undefined,
-      employment_type: formData.type || undefined,
-      department: formData.department || undefined,
+      expected_candidate,
+      job_title: formData.title?.trim() || "",
+      employment_type: formData.type || "",
+      department: formData.department || "",
       office:
         formData.locationType === "onsite"
           ? [formData.city, "Onsite"].filter(Boolean).join(", ")
           : formData.locationType
           ? formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
-          : undefined,
-      required_applicants_number: formData.numApplicants ? Number(formData.numApplicants) : undefined,
-      closing_date: formData.applicationDeadline || undefined,
-      description: formData.description || undefined,
-      requirements_list: formData.requiredSkills?.length ? formData.requiredSkills.map(String) : undefined,
-      duties_list: duties_list.length ? duties_list : undefined,
-      documents_required_list: formData.documentsRequired?.length
-        ? formData.documentsRequired.map(String)
-        : undefined,
+          : "",
+      required_applicants_number: Number(formData.numApplicants) || 1,
+      closing_date: formData.applicationDeadline || "",
+      description: formData.description || "",
+      requirements_list: (formData.requiredSkills || []).map(String),
+      duties_list,
+      documents_required_list: (formData.documentsRequired || []).map(String),
     };
 
-    if (!isEdit) {
-      // CREATE JOB
-      jobPostPayload.expected_candidate = formData.expectedCandidateType || "External Candidate";
+    const jobPostRes = await postJSON(
+      `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
+      token,
+      jobPostPayload
+    );
 
-      console.log("CREATE JOB PAYLOAD:", jobPostPayload);
+    const jobId =
+      jobPostRes?.job_id || jobPostRes?.id || jobPostRes?.data?.id || existingJob?.id || String(Date.now());
 
-      const res = await postJSON(
-        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
+    // --------------------------
+    // Job Filters payload (optional)
+    // --------------------------
+    const hasAnyFilter =
+      (formData.experience !== undefined && formData.experience !== "") ||
+      (formData.preferredLocation || "").trim() !== "" ||
+      (formData.qualification || "").trim() !== "" ||
+      (formData.offeringSalary !== undefined && formData.offeringSalary !== "");
+
+    if (hasAnyFilter) {
+      const jobFiltersPayload = {
+        employee_id: employeeId,
+        job_id: jobId,
+        required_experience_years: Number(formData.experience || 0),
+        prefered_candidate_location: formData.preferredLocation || "",
+        prefered_qualification: formData.qualification || "",
+        offered_salary: Number(formData.offeringSalary || 0),
+      };
+
+      await postJSON(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(
+          eid
+        )}/${encodeURIComponent(jobId)}`,
         token,
-        jobPostPayload
+        jobFiltersPayload
       );
-
-      jobId = res?.job_id || res?.id || res?.data?.id;
-      if (!jobId) throw new Error("Job ID not returned from create endpoint");
-    } else {
-      // EDIT JOB
-      jobPostPayload.job_id = existingJob.id;
-      jobPostPayload.candidate_type = formData.expectedCandidateType || undefined;
-
-      console.log("EDIT JOB PAYLOAD:", jobPostPayload);
-
-      await putJSON(
-        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_post/edit`,
-        token,
-        jobPostPayload
-      );
-
-      jobId = existingJob.id;
     }
 
-    // ----------------------
-    // FILTERS PAYLOAD
-    // ----------------------
-    const filtersPayload = {};
-    if (formData.experience) filtersPayload.required_experience_years = Number(formData.experience);
-    if (formData.preferredLocation) filtersPayload.preferred_candidate_location = formData.preferredLocation;
-    if (formData.qualification) filtersPayload.preferred_qualification = formData.qualification;
-    if (formData.offeringSalary) filtersPayload.offered_salary = Number(formData.offeringSalary);
-
-    filtersPayload.employee_id = employeeId;
-    filtersPayload.job_id = jobId;
-
-    // ----------------------
-    // CREATE OR UPDATE FILTERS
-    // ----------------------
-    if (Object.keys(filtersPayload).length > 2) {
-      if (existingJob?.filters_exist) {
-        // EDIT filters
-        console.log("EDIT FILTERS PAYLOAD:", filtersPayload);
-        await putJSON(
-          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_filters/edit`,
-          token,
-          filtersPayload
-        );
-      } else {
-        // CREATE filters
-        console.log("CREATE FILTERS PAYLOAD:", filtersPayload);
-        await postJSON(
-          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(
-            eid
-          )}/${encodeURIComponent(jobId)}`,
-          token,
-          filtersPayload
-        );
-      }
-    }
-
-    // ----------------------
-    // QUESTIONS (CREATE OR EDIT)
-    // ----------------------
+    // --------------------------
+    // Job Questions payloads
+    // --------------------------
     if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
       await Promise.all(
-        formData.customQuestions.map((q) => {
-          const questionPayload = {
-            employee_id: employeeId,
-            job_id: jobId,
-            question_type: q.type || "short-text",
-            category: "General",
-            mandatory_status: !!q.required,
-            question: q.question || undefined,
-          };
-
-          if (isEdit && q.id) questionPayload.question_id = q.id; // only include for edit
-
-          if (isEdit && q.id) {
-            console.log("EDIT QUESTION PAYLOAD:", questionPayload);
-            return putJSON(
-              `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_question/edit`,
-              token,
-              questionPayload
-            );
-          }
-
-          console.log("CREATE QUESTION PAYLOAD:", questionPayload);
-          return postJSON(
+        formData.customQuestions.map((q) =>
+          postJSON(
             `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobQuestion/${encodeURIComponent(
               eid
             )}/${encodeURIComponent(jobId)}`,
             token,
-            questionPayload
-          );
-        })
+            {
+              employee_id: employeeId,
+              job_id: jobId,
+              question_type: q.type || "short-text",
+              category: "General",
+              mandatory_status: !!q.required, // send boolean
+              question: q.question || "",
+            }
+          )
+        )
       );
     }
 
@@ -395,6 +352,7 @@ const handleSubmit = async () => {
     setIsSubmitting(false);
   }
 };
+
   // Gate publish button without changing visuals
   const canPublish = useMemo(() => {
     const hasAuth =
