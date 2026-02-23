@@ -273,28 +273,6 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
         );
       }
 
-      // jobQuestion payloads (one per question)
-      if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
-        await Promise.all(
-          formData.customQuestions.map((q) =>
-            postJSON(
-              `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobQuestion/${encodeURIComponent(
-                eid
-              )}/${encodeURIComponent(jobId)}`,
-              token,
-              {
-                employee_id: employeeId,
-                job_id: jobId,
-                question_type: q.type || "short-text",
-                category: "General",
-                mandatory_status: q.required ? "Yes" : "No",
-                question: q.question || "",
-              }
-            )
-          )
-        );
-      }
-
       // callback to parent (local)
       const localJob = {
         id: jobId,
