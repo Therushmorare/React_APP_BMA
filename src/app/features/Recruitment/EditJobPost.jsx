@@ -223,8 +223,9 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
 
       const jobPostPayload = {
       employee_id: employeeId,
-      expected_candidate: formData.expectedCandidateType || "",
+      job_id: existingJob.id,
       job_title: formData.title.trim(),
+      candidate_type: formData.expectedCandidateType || "",
       employment_type: formData.type || "",
       department: formData.department || "",
       office:
@@ -233,7 +234,7 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
           : formData.locationType
             ? formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
             : "",
-      required_applicants_number: Number(formData.numApplicants) || 1,
+      required_applicants_num: Number(formData.numApplicants) || 1,
       closing_date: formData.applicationDeadline || "",
       description: formData.description || "",
       requirements_list: (formData.requiredSkills || []).map(String),
@@ -242,7 +243,7 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
     };
 
       const jobPostRes = await postJSON(
-        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_post/edit`,
         token,
         jobPostPayload
       );
@@ -266,9 +267,7 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
           offered_salary: Number(formData.offeringSalary || 0),
         };
         await postJSON(
-          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(eid)}/${encodeURIComponent(
-            jobId
-          )}`,
+          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_filters/edit`,
           token,
           jobFiltersPayload
         );
