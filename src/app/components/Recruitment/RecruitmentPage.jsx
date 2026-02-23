@@ -53,7 +53,7 @@ const JobPosts = () => {
 
           return {
             id: job.job_id,
-            title: job.expected_candidates || job.job_title,
+            title: job.job_title,
             department: job.department,
             status: formatStatus(job.status),
             applicants: job.quantity || 0,

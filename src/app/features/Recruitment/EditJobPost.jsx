@@ -56,6 +56,7 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
       return {
         title: existingJob.title || "",
         department: existingJob.department || "",
+        applicants: existingJob.applicants || 0,
         location: existingJob.location || "",
         locationType: existingJob.locationType || "onsite",
         city: existingJob.city || "",
@@ -67,16 +68,16 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
         requiredSkills: existingJob.requiredSkills || [],
         preferredSkills: existingJob.preferredSkills || [],
         education: existingJob.education || "",
-        salaryRange: existingJob.salaryRange || { min: "", max: "", currency: "ZAR" },
+        salaryRange: existingJob.salary || { min: "", max: "", currency: "ZAR" },
         benefits: existingJob.benefits || "",
-        postingDate: existingJob.postingDate || new Date().toISOString().split("T")[0],
-        applicationDeadline: existingJob.applicationDeadline || "",
+        postingDate: existingJob.creayedAt || new Date().toISOString().split("T")[0],
+        applicationDeadline: existingJob.closing || "",
         customQuestions: existingJob.customQuestions || [],
         // Job Filters tab fields (API: jobFilters)
         experience: existingJob.experience || "",
         preferredLocation: existingJob.preferredLocation || "",
-        qualification: existingJob.qualification || "",
-        offeringSalary: existingJob.offeringSalary || "",
+        qualification: existingJob.expectedQualification || "",
+        offeringSalary: existingJob.salary || "",
         // Candidate type (for expected_candidate)
         expectedCandidateType: existingJob.expectedCandidateType || "external",
         // Required docs (UI -> API documents_required_list)
@@ -746,7 +747,7 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
                     <input
                       type="number"
                       name="num_of_applicants"
-                      value={formData.numApplicants}
+                      value={formData.applicants}
                       onChange={handleChange}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
