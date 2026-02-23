@@ -23,7 +23,7 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
 
   const postJSON = async (url, token, body) => {
     const res = await fetch(url, {
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     });
@@ -551,14 +551,6 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
           >
             Job Requirements
           </button>
-          <button
-            onClick={() => setActiveTab("questions")}
-            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-              activeTab === "questions" ? "bg-white text-green-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Application Questions
-          </button>
         </div>
       </div>
 
@@ -973,113 +965,6 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
           </div>
         )}
 
-        {activeTab === "questions" && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Custom Application Questions</h3>
-                <p className="text-sm text-gray-600">Add custom questions to gather specific information from applicants</p>
-              </div>
-              <button type="button" onClick={addCustomQuestion} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center">
-                <Plus size={14} className="mr-1" />
-                Add Question
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {formData.customQuestions.map((question, index) => (
-                <div key={question.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center">
-                      <GripVertical size={16} className="text-gray-400 mr-2" />
-                      <span className="text-sm font-medium text-gray-700">Question {index + 1}</span>
-                    </div>
-                    <button type="button" onClick={() => removeCustomQuestion(question.id)} className="text-red-600 hover:text-red-800">
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
-                      <input
-                        type="text"
-                        value={question.question}
-                        onChange={(e) => updateCustomQuestion(question.id, "question", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                        placeholder="Enter your question here..."
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Answer Type</label>
-                        <select
-                          value={question.type}
-                          onChange={(e) => updateCustomQuestion(question.id, "type", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                        >
-                          {questionTypes.map((type) => (
-                            <option key={type.value} value={type.value}>{type.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Required</label>
-                        <select
-                          value={String(question.required)}
-                          onChange={(e) => updateCustomQuestion(question.id, "required", e.target.value === "true")}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                        >
-                          <option value="Yes">Yes</option>
-                          <option value="No">No</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {question.type === "multiple-choice" && (
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <label className="block text-sm font-medium text-gray-700">Answer Options</label>
-                          <button type="button" onClick={() => addOption(question.id)} className="text-sm text-green-600 hover:text-green-800">
-                            Add Option
-                          </button>
-                        </div>
-                        <div className="space-y-2">
-                          {question.options.map((option, optionIndex) => (
-                            <div key={optionIndex} className="flex gap-2">
-                              <input
-                                type="text"
-                                value={option}
-                                onChange={(e) => updateOption(question.id, optionIndex, e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-100"
-                                placeholder={`Option ${optionIndex + 1}`}
-                              />
-                              <button type="button" onClick={() => removeOption(question.id, optionIndex)} className="text-red-600 hover:text-red-800">
-                                <X size={16} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {formData.customQuestions.length === 0 && (
-                <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  <p className="text-gray-600 mb-4">No custom questions added yet</p>
-                  <button type="button" onClick={addCustomQuestion} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center mx-auto">
-                    <Plus size={14} className="mr-1" />
-                    Add Your First Question
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Fixed Footer Actions */}
