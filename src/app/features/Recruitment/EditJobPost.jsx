@@ -263,7 +263,7 @@ const EditJobPost = ({ onClose, onSave, existingJob = null }) => {
           job_id: jobId,
           required_experience_years: Number(formData.experience || 0),
           preferred_candidate_location: formData.preferredLocation || "",
-          prefered_qualification: formData.qualification || "",
+          preferred_qualification: formData.qualification || "",
           offered_salary: Number(formData.offeringSalary || 0),
         };
         await postJSON(
