@@ -204,154 +204,123 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
     }));
   };
 
-// =============================
-// PUT helper
-// =============================
-const putJSON = async (url, token, body) => {
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const text = await res.text().catch(() => "");
-  let data = {};
-  if (text) {
+  // ------------------ API submit flow ------------------
+  const handleSubmit = async (publishNow = false) => {
+    setIsSubmitting(true);
     try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text };
-    }
-  }
+      const { token, employeeId } = getAuth();
+      const eid = employeeId;
 
-  if (!res.ok) {
-    const msg =
-      data?.message ||
-      data?.error ||
-      data?.detail ||
-      `PUT failed: ${res.status}`;
-    throw new Error(msg);
-  }
+      // Build expected_candidate per API
+      const expectedTitle = formData.seniorityLevel
+        ? `${formData.seniorityLevel} ${formData.title}`.trim()
+        : formData.title || "Candidate";
+      const expected_candidate = `[${formData.expectedCandidateType === "internal" ? "Internal" : "External"}] ${expectedTitle}`;
 
-  return data;
-};
+      // jobPost payload
+      const duties_list = splitToList(formData.responsibilities || "");
 
-const handleSubmit = async (publishNow = false) => {
-  setIsSubmitting(true);
-
-  try {
-    const { token, employeeId } = getAuth();
-    const eid = employeeId;
-
-    // --------------------------
-    // Build expected_candidate string
-    // --------------------------
-    const expectedTitle = formData.seniorityLevel
-      ? `${formData.seniorityLevel} ${formData.title?.trim()}`
-      : formData.title?.trim() || "Candidate";
-
-    const expected_candidate =
-      (formData.expectedCandidateType === "internal" ? "Internal" : "External") +
-      " " +
-      expectedTitle;
-
-    // --------------------------
-    // Job Post payload
-    // --------------------------
-    const duties_list = splitToList(formData.responsibilities || "");
-
-    const jobPostPayload = {
+      const jobPostPayload = {
       employee_id: employeeId,
-      expected_candidate,
-      job_title: formData.title?.trim() || "",
+      expected_candidate: formData.expectedCandidateType || "",
+      job_title: formData.title.trim(),
       employment_type: formData.type || "",
       department: formData.department || "",
       office:
         formData.locationType === "onsite"
           ? [formData.city, "Onsite"].filter(Boolean).join(", ")
           : formData.locationType
-          ? formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
-          : "",
+            ? formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
+            : "",
       required_applicants_number: Number(formData.numApplicants) || 1,
       closing_date: formData.applicationDeadline || "",
       description: formData.description || "",
       requirements_list: (formData.requiredSkills || []).map(String),
       duties_list,
-      documents_required_list: (formData.documentsRequired || []).map(String),
+      documents_required_list: (formData.documentsRequired || []).map(String),      
     };
 
-    const jobPostRes = await postJSON(
-      `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
-      token,
-      jobPostPayload
-    );
-
-    const jobId =
-      jobPostRes?.job_id || jobPostRes?.id || jobPostRes?.data?.id || existingJob?.id || String(Date.now());
-
-    // --------------------------
-    // Job Filters payload (optional)
-    // --------------------------
-    const hasAnyFilter =
-      (formData.experience !== undefined && formData.experience !== "") ||
-      (formData.preferredLocation || "").trim() !== "" ||
-      (formData.qualification || "").trim() !== "" ||
-      (formData.offeringSalary !== undefined && formData.offeringSalary !== "");
-
-    if (hasAnyFilter) {
-      const jobFiltersPayload = {
-        employee_id: employeeId,
-        job_id: jobId,
-        required_experience_years: Number(formData.experience || 0),
-        prefered_candidate_location: formData.preferredLocation || "",
-        prefered_qualification: formData.qualification || "",
-        offered_salary: Number(formData.offeringSalary || 0),
-      };
-
-      await postJSON(
-        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(
-          eid
-        )}/${encodeURIComponent(jobId)}`,
+      const jobPostRes = await postJSON(
+        `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
         token,
-        jobFiltersPayload
+        jobPostPayload
       );
-    }
+      const jobId =
+        jobPostRes?.job_id || jobPostRes?.id || jobPostRes?.data?.id || existingJob?.id || String(Date.now());
 
-    // --------------------------
-    // Job Questions payloads
-    // --------------------------
-    if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
-      await Promise.all(
-        formData.customQuestions.map((q) =>
-          postJSON(
-            `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobQuestion/${encodeURIComponent(
-              eid
-            )}/${encodeURIComponent(jobId)}`,
-            token,
-            {
-              employee_id: employeeId,
-              job_id: jobId,
-              question_type: q.type || "short-text",
-              category: "General",
-              mandatory_status: !!q.required, // send boolean
-              question: q.question || "",
-            }
+      // jobFilters payload (send only if something provided)
+      const hasAnyFilter =
+        (formData.experience && `${formData.experience}`.length > 0) ||
+        (formData.preferredLocation && formData.preferredLocation.length > 0) ||
+        (formData.qualification && formData.qualification.length > 0) ||
+        (formData.offeringSalary && `${formData.offeringSalary}`.length > 0);
+
+      if (hasAnyFilter) {
+        const jobFiltersPayload = {
+          employee_id: employeeId,
+          job_id: jobId,
+          required_experience_years: Number(formData.experience || 0),
+          prefered_candidate_location: formData.preferredLocation || "",
+          prefered_qualification: formData.qualification || "",
+          offered_salary: Number(formData.offeringSalary || 0),
+        };
+        await postJSON(
+          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(eid)}/${encodeURIComponent(
+            jobId
+          )}`,
+          token,
+          jobFiltersPayload
+        );
+      }
+
+      // jobQuestion payloads (one per question)
+      if (Array.isArray(formData.customQuestions) && formData.customQuestions.length > 0) {
+        await Promise.all(
+          formData.customQuestions.map((q) =>
+            postJSON(
+              `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobQuestion/${encodeURIComponent(
+                eid
+              )}/${encodeURIComponent(jobId)}`,
+              token,
+              {
+                employee_id: employeeId,
+                job_id: jobId,
+                question_type: q.type || "short-text",
+                category: "General",
+                mandatory_status: q.required ? "Yes" : "No",
+                question: q.question || "",
+              }
+            )
           )
-        )
-      );
-    }
+        );
+      }
 
-    setShowSuccess(true);
-  } catch (error) {
-    console.error("Job submission error:", error);
-    alert(error.message);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      // callback to parent (local)
+      const localJob = {
+        id: jobId,
+        ...formData,
+        status: publishNow ? "Paused" : "Draft",
+        applicants: existingJob ? existingJob.applicants : 0,
+        createdAt: existingJob ? existingJob.createdAt : new Date().toISOString().split("T")[0],
+      };
+      onSave && onSave(localJob);
+
+      if (publishNow) {
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          onClose();
+        }, 3000);
+      } else {
+        onClose();
+      }
+    } catch (err) {
+      console.error(err);
+      alert(`Could not submit job. ${err?.message || "Please try again."}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Gate publish button without changing visuals
   const canPublish = useMemo(() => {
