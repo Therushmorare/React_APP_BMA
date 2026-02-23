@@ -239,28 +239,22 @@ const putJSON = async (url, token, body) => {
   return data;
 };
 
-
-// =============================
-// HANDLE SUBMIT (CREATE + EDIT)
-// =============================
 const handleSubmit = async () => {
   setIsSubmitting(true);
-
   try {
     const { token, employeeId } = getAuth();
     if (!token || !employeeId) throw new Error("Authentication missing");
 
     const eid = employeeId;
     const isEdit = !!existingJob?.id;
+    let jobId;
 
     // ----------------------
     // JOB POST PAYLOAD
     // ----------------------
-    const duties_list = splitToList(formData.responsibilities || "");
+    const duties_list = splitToList(formData.responsibilities || []);
 
-    // ====================================================
-    // 🟢 CREATE JOB
-    // ====================================================
+    // ---------- CREATE JOB ----------
     if (!isEdit) {
       const createPayload = {
         employee_id: employeeId,
@@ -272,12 +266,11 @@ const handleSubmit = async () => {
           formData.locationType === "onsite"
             ? [formData.city, "Onsite"].filter(Boolean).join(", ")
             : formData.locationType
-            ? formData.locationType.charAt(0).toUpperCase() +
-              formData.locationType.slice(1)
+            ? formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
             : "",
-        required_applicants_number: Number(formData.numApplicants) || 1,
-        closing_date: formData.applicationDeadline || "",
-        description: formData.description || "",
+        required_applicants_number: Number(formData.numApplicants) || undefined,
+        closing_date: formData.applicationDeadline || undefined,
+        description: formData.description || undefined,
         requirements_list: (formData.requiredSkills || []).map(String),
         duties_list,
         documents_required_list: (formData.documentsRequired || []).map(String),
@@ -292,19 +285,14 @@ const handleSubmit = async () => {
       );
 
       jobId = res?.job_id || res?.id || res?.data?.id;
-
-      if (!jobId) {
-        throw new Error("Job ID not returned from create endpoint");
-      }
+      if (!jobId) throw new Error("Job ID not returned from create endpoint");
     }
 
-    // ====================================================
-    // 🟡 EDIT JOB
-    // ====================================================
+    // ---------- EDIT JOB ----------
     if (isEdit) {
       const editPayload = {
         employee_id: employeeId,
-        job_id: existingJob.id, // REQUIRED
+        job_id: existingJob.id,
         job_title: formData.title?.trim() || "",
         candidate_type: formData.expectedCandidateType || "",
         employment_type: formData.type || "",
@@ -313,12 +301,11 @@ const handleSubmit = async () => {
           formData.locationType === "onsite"
             ? [formData.city, "Onsite"].filter(Boolean).join(", ")
             : formData.locationType
-            ? formData.locationType.charAt(0).toUpperCase() +
-              formData.locationType.slice(1)
+            ? formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
             : "",
-        required_applicants_num: Number(formData.numApplicants) || 1,
-        closing_date: formData.applicationDeadline || "",
-        description: formData.description || "",
+        required_applicants_num: formData.numApplicants ? Number(formData.numApplicants) : undefined,
+        closing_date: formData.applicationDeadline || undefined,
+        description: formData.description || undefined,
         requirements_list: (formData.requiredSkills || []).map(String),
         duties_list,
         documents_required_list: (formData.documentsRequired || []).map(String),
@@ -334,37 +321,27 @@ const handleSubmit = async () => {
 
       jobId = existingJob.id;
     }
+
     // ----------------------
     // FILTERS PAYLOAD
     // ----------------------
-    const filtersPayload = {
-      employee_id: employeeId,
-      job_id: jobId,
-      required_experience_years: Number(formData.experience || 0),
-      preferred_candidate_location: formData.preferredLocation ?? "",
-      preferred_qualification: formData.qualification ?? "",
-      offered_salary: Number(formData.offeringSalary || 0),
-    };
+    const filtersPayload = {};
+    if (formData.experience) filtersPayload.required_experience_years = Number(formData.experience);
+    if (formData.preferredLocation) filtersPayload.preferred_candidate_location = formData.preferredLocation;
+    if (formData.qualification) filtersPayload.preferred_qualification = formData.qualification;
+    if (formData.offeringSalary) filtersPayload.offered_salary = Number(formData.offeringSalary);
 
-    // ----------------------
-    // DETERMINE CREATE OR UPDATE FILTERS
-    // ----------------------
-    const hasAnyFilter =
-      String(filtersPayload.required_experience_years).trim() ||
-      filtersPayload.preferred_candidate_location.trim() ||
-      filtersPayload.preferred_qualification.trim() ||
-      String(filtersPayload.offered_salary).trim();
+    if (Object.keys(filtersPayload).length > 0) {
+      filtersPayload.employee_id = employeeId;
+      filtersPayload.job_id = jobId;
 
-    if (hasAnyFilter) {
       if (existingJob?.filters_exist) {
-        // EDIT filters
         await putJSON(
           `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_filters/edit`,
           token,
           filtersPayload
         );
       } else {
-        // CREATE filters
         await postJSON(
           `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(
             eid
@@ -378,18 +355,20 @@ const handleSubmit = async () => {
     // ----------------------
     // QUESTIONS
     // ----------------------
-    if (Array.isArray(formData.customQuestions)) {
+    if (Array.isArray(formData.customQuestions) && formData.customQuestions.length) {
       await Promise.all(
         formData.customQuestions.map((q) => {
           const questionPayload = {
             employee_id: employeeId,
-            question_id: q.id, // only needed for edit
             job_id: jobId,
             question_type: q.type || "short-text",
             category: "General",
             mandatory_status: !!q.required,
             question: q.question || "",
           };
+
+          // Only send question_id if editing existing question
+          if (isEdit && q.id) questionPayload.question_id = q.id;
 
           if (isEdit && q.id) {
             return putJSON(
