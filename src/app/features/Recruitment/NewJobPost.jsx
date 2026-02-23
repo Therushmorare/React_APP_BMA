@@ -332,44 +332,66 @@ const handleSubmit = async () => {
       jobId = existingJob.id;
     }
 
-    // ====================================================
-    // 🔵 FILTERS (CREATE OR EDIT)
-    // ====================================================
-    const hasAnyFilter =
-      formData.experience ||
-      formData.preferredLocation ||
-      formData.qualification ||
-      formData.offeringSalary;
+// -----------------------------------
+// FILTERS (CREATE OR EDIT)
+// -----------------------------------
 
-    if (hasAnyFilter) {
-      const filtersPayload = {
-        employee_id: employeeId,
-        job_id: jobId,
-        required_experience_years: Number(formData.experience || 0),
-        preferred_candidate_location: formData.preferredLocation || "",
-        preferred_qualification: formData.qualification || "",
-        offered_salary: Number(formData.offeringSalary || 0),
-      };
+const hasAnyFilter =
+  String(formData.experience || "").trim() ||
+  String(formData.preferredLocation || "").trim() ||
+  String(formData.qualification || "").trim() ||
+  String(formData.offeringSalary || "").trim();
 
-      console.log("FILTER PAYLOAD:", filtersPayload);
+if (hasAnyFilter) {
+  const filtersPayload = {
+    employee_id: employeeId,
+    job_id: jobId,
 
-      if (isEdit) {
-        await putJSON(
-          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_filters/edit`,
-          token,
-          filtersPayload
-        );
-      } else {
-        await postJSON(
-          `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(
-            eid
-          )}/${encodeURIComponent(jobId)}`,
-          token,
-          filtersPayload
-        );
-      }
-    }
+    required_experience_years:
+      formData.experience !== null &&
+      formData.experience !== undefined &&
+      formData.experience !== ""
+        ? Number(formData.experience)
+        : 0,
 
+    preferred_candidate_location:
+      formData.preferredLocation !== null &&
+      formData.preferredLocation !== undefined
+        ? String(formData.preferredLocation).trim()
+        : "",
+
+    preferred_qualification:
+      formData.qualification !== null &&
+      formData.qualification !== undefined
+        ? String(formData.qualification).trim()
+        : "",
+
+    offered_salary:
+      formData.offeringSalary !== null &&
+      formData.offeringSalary !== undefined &&
+      formData.offeringSalary !== ""
+        ? Number(formData.offeringSalary)
+        : 0,
+  };
+
+  console.log("SAFE FILTER PAYLOAD:", filtersPayload);
+
+  if (isEdit) {
+    await putJSON(
+      `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_filters/edit`,
+      token,
+      filtersPayload
+    );
+  } else {
+    await postJSON(
+      `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobFilters/${encodeURIComponent(
+        eid
+      )}/${encodeURIComponent(jobId)}`,
+      token,
+      filtersPayload
+    );
+  }
+}
     // ====================================================
     // 🟣 QUESTIONS (CREATE OR EDIT)
     // ====================================================
@@ -421,7 +443,7 @@ const handleSubmit = async () => {
     setIsSubmitting(false);
   }
 };
-  
+
   // Gate publish button without changing visuals
   const canPublish = useMemo(() => {
     const hasAuth =
