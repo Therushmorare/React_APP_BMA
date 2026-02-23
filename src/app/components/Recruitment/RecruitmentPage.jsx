@@ -9,6 +9,7 @@ import PipelineModal from './Pipeline';
 import JobDetailsModal from './JobDetails'; 
 import DeleteJobModal from './deleteJob';
 import NewJobPost from '@/app/features/Recruitment/NewJobPost'
+import EditJobPost from '@/app/features/Recruitment/EditJobPost';
 
 const JobPosts = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -244,7 +245,7 @@ const JobPosts = () => {
         title={`Edit Draft - ${selectedJob?.title}`}
         position="form"
       >
-        <NewJobPost 
+        <EditJobPost 
           onClose={() => setShowModal(false)} 
           onSave={handleEditJobSave}
           existingJob={selectedJob}
