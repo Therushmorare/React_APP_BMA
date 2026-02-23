@@ -258,49 +258,82 @@ const handleSubmit = async () => {
     // ----------------------
     const duties_list = splitToList(formData.responsibilities || "");
 
-    const jobPostPayload = {
-      employee_id: employeeId,
-      job_id: existingJob?.id, // only for edit
-      job_title: formData.title?.trim() || "",
-      candidate_type: formData.expectedCandidateType || "",
-      employment_type: formData.type || "",
-      department: formData.department || "",
-      office:
-        formData.locationType === "onsite"
-          ? [formData.city, "Onsite"].filter(Boolean).join(", ")
-          : formData.locationType
-          ? formData.locationType.charAt(0).toUpperCase() + formData.locationType.slice(1)
-          : "",
-      required_applicants_num: Number(formData.numApplicants) || 1,
-      closing_date: formData.applicationDeadline || "",
-      description: formData.description || "",
-      requirements_list: (formData.requiredSkills || []).map(String),
-      duties_list,
-      documents_required_list: (formData.documentsRequired || []).map(String),
-    };
-
-    // ----------------------
-    // CREATE OR EDIT JOB
-    // ----------------------
-    let jobId;
+    // ====================================================
+    // 🟢 CREATE JOB
+    // ====================================================
     if (!isEdit) {
-      const jobPostRes = await postJSON(
+      const createPayload = {
+        employee_id: employeeId,
+        expected_candidate: formData.expectedCandidateType || "",
+        job_title: formData.title?.trim() || "",
+        employment_type: formData.type || "",
+        department: formData.department || "",
+        office:
+          formData.locationType === "onsite"
+            ? [formData.city, "Onsite"].filter(Boolean).join(", ")
+            : formData.locationType
+            ? formData.locationType.charAt(0).toUpperCase() +
+              formData.locationType.slice(1)
+            : "",
+        required_applicants_number: Number(formData.numApplicants) || 1,
+        closing_date: formData.applicationDeadline || "",
+        description: formData.description || "",
+        requirements_list: (formData.requiredSkills || []).map(String),
+        duties_list,
+        documents_required_list: (formData.documentsRequired || []).map(String),
+      };
+
+      console.log("CREATE PAYLOAD:", createPayload);
+
+      const res = await postJSON(
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/jobPost/${encodeURIComponent(eid)}`,
         token,
-        jobPostPayload
+        createPayload
       );
 
-      jobId = jobPostRes?.job_id || jobPostRes?.id || jobPostRes?.data?.id;
-      if (!jobId) throw new Error("Job ID not returned from create job endpoint");
-    } else {
+      jobId = res?.job_id || res?.id || res?.data?.id;
+
+      if (!jobId) {
+        throw new Error("Job ID not returned from create endpoint");
+      }
+    }
+
+    // ====================================================
+    // 🟡 EDIT JOB
+    // ====================================================
+    if (isEdit) {
+      const editPayload = {
+        employee_id: employeeId,
+        job_id: existingJob.id, // REQUIRED
+        job_title: formData.title?.trim() || "",
+        candidate_type: formData.expectedCandidateType || "",
+        employment_type: formData.type || "",
+        department: formData.department || "",
+        office:
+          formData.locationType === "onsite"
+            ? [formData.city, "Onsite"].filter(Boolean).join(", ")
+            : formData.locationType
+            ? formData.locationType.charAt(0).toUpperCase() +
+              formData.locationType.slice(1)
+            : "",
+        required_applicants_num: Number(formData.numApplicants) || 1,
+        closing_date: formData.applicationDeadline || "",
+        description: formData.description || "",
+        requirements_list: (formData.requiredSkills || []).map(String),
+        duties_list,
+        documents_required_list: (formData.documentsRequired || []).map(String),
+      };
+
+      console.log("EDIT PAYLOAD:", editPayload);
+
       await putJSON(
         `https://jellyfish-app-z83s2.ondigitalocean.app/api/hr/job_post/edit`,
         token,
-        jobPostPayload
+        editPayload
       );
+
       jobId = existingJob.id;
     }
-
     // ----------------------
     // FILTERS PAYLOAD
     // ----------------------
