@@ -91,7 +91,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       city: "",
       type: "Full-time",
       seniorityLevel: "",
-      status: "draft",
+      status: "PENDING",
       description: "",
       responsibilities: "",
       requiredSkills: [],
@@ -108,7 +108,7 @@ const NewJobPost = ({ onClose, onSave, existingJob = null }) => {
       qualification: "",
       offeringSalary: "",
       // Candidate type
-      expectedCandidateType: "external",
+      expectedCandidateType: "EXTERNAL",
       // Required docs
       documentsRequired: [],
     };
